@@ -8,7 +8,7 @@ import com.amazonaws.auth.profile.{ProfileCredentialsProvider, ProfilesConfigFil
 import org.embulk.config.{Config, ConfigDefault, ConfigException}
 import org.embulk.spi.unit.LocalFile
 
-object AwsCredentials {
+object Aws {
 
   trait Task {
 
@@ -58,11 +58,11 @@ object AwsCredentials {
 
   }
 
-  def apply(task: Task): AwsCredentials = new AwsCredentials(task)
+  def apply(task: Task): Aws = new Aws(task)
 
 }
 
-class AwsCredentials(task: AwsCredentials.Task) {
+class Aws(task: Aws.Task) {
 
   def createAwsCredentialsProvider: AWSCredentialsProvider = {
     task.getAuthMethod match {
