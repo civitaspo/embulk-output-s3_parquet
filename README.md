@@ -11,7 +11,6 @@
 
 ## Configuration
 
-
 - **bucket**: s3 bucket name (string, required)
 - **path_prefix**: prefix of target keys (string, optional)
 - **sequence_format**: format of the sequence number of the output files (string, default: `"%03d.%02d."`)
@@ -27,12 +26,10 @@
 - **block_size**: block size of parquet file (int, default: `134217728` (128MB))
 - **page_size**: page size of parquet file (int, default: `1048576` (1MB))
 - **auth_method**: name of mechanism to authenticate requests (`"basic"`, `"env"`, `"instance"`, `"profile"`, `"properties"`, `"anonymous"`, or `"session"`, default: `"default"`)
-  - `"basic"`: uses access_key_id and secret_access_key to authenticate.
+  - `"basic"`: uses **access_key_id** and **secret_access_key** to authenticate.
   - `"env"`: uses `AWS_ACCESS_KEY_ID` (or `AWS_ACCESS_KEY`) and `AWS_SECRET_KEY` (or `AWS_SECRET_ACCESS_KEY`) environment variables.
   - `"instance"`: uses EC2 instance profile or attached ECS task role.
   - `"profile"`: uses credentials written in a file. Format of the file is as following, where `[...]` is a name of profile.
-    - **profile_file**: path to a profiles file (string, default: given by `AWS_CREDENTIAL_PROFILES_FILE` environment variable, or ~/.aws/credentials).
-    - **profile_name**: name of a profile (string, default: `"default"`)
     ```
     [default]
     aws_access_key_id=YOUR_ACCESS_KEY_ID
@@ -43,12 +40,23 @@
     ```
   - `"properties"`: uses aws.accessKeyId and aws.secretKey Java system properties.
   - `"anonymous"`: uses anonymous access. This auth method can access only public files.
-  - `"session"`: uses temporary-generated access_key_id, secret_access_key and session_token.
+  - `"session"`: uses temporary-generated **access_key_id**, **secret_access_key** and **session_token**.
+  - `"assume_role"`: uses temporary-generated credentials by assuming **role_arn** role.
   - `"default"`: uses AWS SDK's default strategy to look up available credentials from runtime environment. This method behaves like the combination of the following methods.
     1. `"env"`
     1. `"properties"`
     1. `"profile"`
     1. `"instance"`
+- **profile_file**: path to a profiles file. this is optionally used when **auth_method** is `"profile"`. (string, default: given by `AWS_CREDENTIAL_PROFILES_FILE` environment variable, or ~/.aws/credentials).
+- **profile_name**: name of a profile. this is optionally used when **auth_method** is `"profile"`. (string, default: `"default"`)
+- **access_key_id**: aws access key id. this is required when **auth_method** is `"basic"` or `"session"`. (string, optional)
+- **secret_access_key**: aws secret access key. this is required when **auth_method** is `"basic"` or `"session"`. (string, optional)
+- **session_token**: aws session token. this is required when **auth_method** is `"session"`. (string, optional)
+- **role_arn**: arn of the role to assume. this is required for **auth_method** is `"assume_role"`. (string, optional)
+- **role_session_name**: an identifier for the assumed role session. this is required when **auth_method** is `"assume_role"`. (string, optional)  
+- **role_external_id**: a unique identifier that is used by third parties when assuming roles in their customers' accounts. this is optionally used for **auth_method**: `"assume_role"`. (string, optional)
+- **role_session_duration_seconds**: duration, in seconds, of the role session. this is optionally used for **auth_method**: `"assume_role"`. (int, optional) 
+- **scope_down_policy**: an iam policy in json format. this is optionally used for **auth_method**: `"assume_role"`. (string, optional)
 - **endpoint**: The AWS Service endpoint (string, optional)
 - **region**: The AWS region (string, optional)
 - **http_proxy**: Indicate whether using when accessing AWS via http proxy. (optional)
@@ -109,3 +117,4 @@ $ ./gradlew gemPush
 ## TODO
 
 * Support [LogicalTypes](https://github.com/apache/parquet-format/blob/2b38663/LogicalTypes.md)
+
