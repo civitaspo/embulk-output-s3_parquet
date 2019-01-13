@@ -1,4 +1,4 @@
-package org.embulk.output.s3_parquet
+package org.embulk.output.s3_parquet.aws
 
 
 import java.util.Optional
@@ -6,9 +6,10 @@ import java.util.Optional
 import com.amazonaws.auth.{AnonymousAWSCredentials, AWSCredentialsProvider, AWSStaticCredentialsProvider, BasicAWSCredentials, BasicSessionCredentials, DefaultAWSCredentialsProviderChain, EC2ContainerCredentialsProviderWrapper, EnvironmentVariableCredentialsProvider, STSAssumeRoleSessionCredentialsProvider, SystemPropertiesCredentialsProvider}
 import com.amazonaws.auth.profile.{ProfileCredentialsProvider, ProfilesConfigFile}
 import org.embulk.config.{Config, ConfigDefault, ConfigException}
+import org.embulk.output.s3_parquet.aws.AwsCredentials.Task
 import org.embulk.spi.unit.LocalFile
 
-object Aws {
+object AwsCredentials {
 
   trait Task {
 
@@ -58,11 +59,10 @@ object Aws {
 
   }
 
-  def apply(task: Task): Aws = new Aws(task)
-
+  def apply(task: Task): AwsCredentials = new AwsCredentials(task)
 }
 
-class Aws(task: Aws.Task) {
+class AwsCredentials(task: Task) {
 
   def createAwsCredentialsProvider: AWSCredentialsProvider = {
     task.getAuthMethod match {
@@ -92,7 +92,7 @@ class Aws(task: Aws.Task) {
       case "anonymous" =>
         new AWSStaticCredentialsProvider(new AnonymousAWSCredentials)
 
-      case "session"   =>
+      case "session" =>
         new AWSStaticCredentialsProvider(new BasicSessionCredentials(
           getRequiredOption(task.getAccessKeyId, "access_key_id"),
           getRequiredOption(task.getSecretAccessKey, "secret_access_key"),
@@ -115,13 +115,14 @@ class Aws(task: Aws.Task) {
         new DefaultAWSCredentialsProviderChain
 
       case am =>
-        throw new ConfigException(s"'$am' is unsupported: Supported `auth_method` is 'basic', 'env', 'instance', 'profile', 'properties', 'anonymous', or 'session'")
+        throw new ConfigException(s"'$am' is unsupported: `auth_method` must be one of ['basic', 'env', 'instance', 'profile', 'properties', 'anonymous', 'session', 'assume_role', 'default'].")
     }
   }
 
   private def getRequiredOption[A](o: Optional[A],
                                    name: String): A = {
-    o.orElseThrow(throw new ConfigException(s"`$name` must be set when `auth_method` is ${task.getAuthMethod}."))
+    o.orElseThrow(() => new ConfigException(s"`$name` must be set when `auth_method` is ${task.getAuthMethod}."))
   }
+
 
 }

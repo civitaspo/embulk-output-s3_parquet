@@ -62,7 +62,7 @@
 - **http_proxy**: Indicate whether using when accessing AWS via http proxy. (optional)
   - **host** proxy host (string, required)
   - **port** proxy port (int, optional)
-  - **https** use https or not (boolean, default: `true`)
+  - **protocol** proxy protocol (string, default: `"https"`)
   - **user** proxy user (string, optional)
   - **password** proxy password (string, optional)
 
