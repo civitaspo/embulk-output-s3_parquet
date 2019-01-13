@@ -35,12 +35,6 @@ dependencies {
     testCompile 'org.embulk:embulk-test:0.9.12'
 }
 
-spotless {
-    scala {
-        scalafmt('1.5.1').configFile('.scalafmt.conf')
-    }
-}
-
 task classpath(type: Copy, dependsOn: ["jar"]) {
     doFirst { file("classpath").deleteDir() }
     from (configurations.runtime - configurations.provided + files(jar.archivePath))
