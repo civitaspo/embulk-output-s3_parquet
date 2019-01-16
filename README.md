@@ -23,8 +23,10 @@
   - **timezone**: timezone if type of this column is timestamp. If not set, **default_timezone** is used. (string, optional)
   - **format**: timestamp format if type of this column is timestamp. If not set, **default_timestamp_format**: is used. (string, optional)
 - **canned_acl**: grants one of [canned ACLs](https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#CannedACL) for created objects (string, default: `private`)
-- **block_size**: block size of parquet file (int, default: `134217728` (128MB))
-- **page_size**: page size of parquet file (int, default: `1048576` (1MB))
+- **block_size**: The block size is the size of a row group being buffered in memory. This limits the memory usage when writing. Larger values will improve the I/O when reading but consume more memory when writing. (int, default: `134217728` (128MB))
+- **page_size**: The page size is for compression. When reading, each page can be decompressed independently. A block is composed of pages. The page is the smallest unit that must be read fully to access a single record. If this value is too small, the compression will deteriorate. (int, default: `1048576` (1MB))
+- **max_padding_size**: The max size (bytes) to write as padding and the min size of a row group (int, default: `8388608` (8MB))
+- **enable_dictionary_encoding**: The boolean value is to enable/disable dictionary encoding. (boolean, default: `true`)
 - **auth_method**: name of mechanism to authenticate requests (`"basic"`, `"env"`, `"instance"`, `"profile"`, `"properties"`, `"anonymous"`, or `"session"`, default: `"default"`)
   - `"basic"`: uses **access_key_id** and **secret_access_key** to authenticate.
   - `"env"`: uses `AWS_ACCESS_KEY_ID` (or `AWS_ACCESS_KEY`) and `AWS_SECRET_KEY` (or `AWS_SECRET_ACCESS_KEY`) environment variables.
@@ -65,6 +67,7 @@
   - **protocol** proxy protocol (string, default: `"https"`)
   - **user** proxy user (string, optional)
   - **password** proxy password (string, optional)
+- **buffer_dir**: buffer directory for parquet files to be uploaded on S3 (string, default: Create a Temporary Directory)
 
 
 ## Example
