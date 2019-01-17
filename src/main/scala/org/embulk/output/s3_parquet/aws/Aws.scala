@@ -11,6 +11,7 @@ object Aws {
     extends AwsCredentials.Task
     with AwsEndpointConfiguration.Task
     with AwsClientConfiguration.Task
+    with AwsS3Configuration.Task
 
   def apply(task: Task): Aws = new Aws(task)
 
@@ -19,7 +20,9 @@ object Aws {
 class Aws(task: Aws.Task) {
 
   def withS3[A](f: AmazonS3 => A): A = {
-    val svc = createService(AmazonS3ClientBuilder.standard())
+    val builder: AmazonS3ClientBuilder = AmazonS3ClientBuilder.standard()
+    AwsS3Configuration(task).configureAmazonS3ClientBuilder(builder)
+    val svc = createService(builder)
     try f(svc)
     finally svc.shutdown()
   }
