@@ -29,6 +29,7 @@ object S3ParquetOutputPlugin {
     def getBucket: String
 
     @Config("path_prefix")
+    @ConfigDefault("\"\"")
     def getPathPrefix: String
 
     @Config("sequence_format")
