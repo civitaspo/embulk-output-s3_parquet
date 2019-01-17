@@ -23,20 +23,17 @@ dependencies {
     provided "org.embulk:embulk-core:0.9.12"
 
     compile 'org.scala-lang:scala-library:2.12.8'
-    compile 'com.amazonaws:aws-java-sdk-s3:1.11.479'
-    compile 'org.xerial.snappy:snappy-java:1.1.7.2'
-    ['column', 'common', 'encoding'].each { v ->
-        compile "org.apache.parquet:parquet-$v:1.10.0"
+    ['s3', 'sts'].each { v ->
+        compile "com.amazonaws:aws-java-sdk-${v}:1.11.479"
     }
+    ['column', 'common', 'encoding', 'format', 'hadoop', 'jackson'].each { v ->
+        compile "org.apache.parquet:parquet-${v}:1.10.0"
+    }
+    compile 'org.apache.hadoop:hadoop-common:2.9.2'
+    compile 'org.xerial.snappy:snappy-java:1.1.7.2'
 
     testCompile 'org.scalatest:scalatest_2.12:3.0.5'
     testCompile 'org.embulk:embulk-test:0.9.12'
-}
-
-spotless {
-    scala {
-        scalafmt('1.5.1').configFile('.scalafmt.conf')
-    }
 }
 
 task classpath(type: Copy, dependsOn: ["jar"]) {

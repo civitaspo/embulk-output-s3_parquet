@@ -1,0 +1,42 @@
+package org.embulk.output.s3_parquet.aws
+
+
+import com.amazonaws.client.builder.AwsClientBuilder
+import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
+import com.amazonaws.services.s3.transfer.{TransferManager, TransferManagerBuilder}
+
+object Aws {
+
+  trait Task
+    extends AwsCredentials.Task
+    with AwsEndpointConfiguration.Task
+    with AwsClientConfiguration.Task
+
+  def apply(task: Task): Aws = new Aws(task)
+
+}
+
+class Aws(task: Aws.Task) {
+
+  def withS3[A](f: AmazonS3 => A): A = {
+    val svc = createService(AmazonS3ClientBuilder.standard())
+    try f(svc)
+    finally svc.shutdown()
+  }
+
+  def withTransferManager[A](f: TransferManager => A): A = {
+    withS3 { s3 =>
+      val svc = TransferManagerBuilder.standard().withS3Client(s3).build()
+      try f(svc)
+      finally svc.shutdownNow(false)
+    }
+  }
+
+  def createService[S <: AwsClientBuilder[S, T], T](builder: AwsClientBuilder[S, T]): T = {
+    AwsEndpointConfiguration(task).configureAwsClientBuilder(builder)
+    AwsClientConfiguration(task).configureAwsClientBuilder(builder)
+    builder.setCredentials(AwsCredentials(task).createAwsCredentialsProvider)
+
+    builder.build()
+  }
+}
