@@ -83,6 +83,10 @@ out:
   canned_acl: bucket-owner-full-control
 ```
 
+## Note
+
+* The current implementation does not support [LogicalTypes](https://github.com/apache/parquet-format/blob/2b38663/LogicalTypes.md). I will implement them later as **column_options**. So, currently **timestamp** type and **json** type are stored as UTF-8 String. Please be careful.  
+
 ## Development
 
 ### Run example:
@@ -116,8 +120,3 @@ $ ./gradlew gemPush
 ## ChangeLog
 
 [CHANGELOG.md](./CHANGELOG.md)
-
-## TODO
-
-* Support [LogicalTypes](https://github.com/apache/parquet-format/blob/2b38663/LogicalTypes.md)
-
