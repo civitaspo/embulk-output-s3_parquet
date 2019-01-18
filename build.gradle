@@ -3,6 +3,7 @@ plugins {
     id "com.jfrog.bintray" version "1.1"
     id "com.github.jruby-gradle.base" version "1.5.0"
     id "com.diffplug.gradle.spotless" version "3.13.0"
+    id "com.adarshr.test-logger" version "1.6.0"  // For Pretty test logging
 }
 import com.github.jrubygradle.JRubyExec
 repositories {
@@ -34,6 +35,14 @@ dependencies {
 
     testCompile 'org.scalatest:scalatest_2.12:3.0.5'
     testCompile 'org.embulk:embulk-test:0.9.12'
+    testCompile 'org.embulk:embulk-standards:0.9.12'
+    testCompile 'cloud.localstack:localstack-utils:0.1.15'
+    testCompile 'org.apache.parquet:parquet-tools:1.8.0'
+    testCompile 'org.apache.hadoop:hadoop-client:2.9.2'
+}
+
+testlogger {
+    theme "mocha"
 }
 
 task classpath(type: Copy, dependsOn: ["jar"]) {
