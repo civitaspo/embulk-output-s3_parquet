@@ -52,7 +52,7 @@ object EmbulkMessageType {
 
     override def jsonColumn(column: Column): Unit = {
       // TODO: does this work?
-      builder.add(new PrimitiveType(Type.Repetition.OPTIONAL, PrimitiveTypeName.BINARY, column.getName, OriginalType.JSON))
+      builder.add(new PrimitiveType(Type.Repetition.OPTIONAL, PrimitiveTypeName.BINARY, column.getName, OriginalType.UTF8))
     }
   }
 
