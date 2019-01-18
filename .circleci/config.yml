@@ -22,6 +22,7 @@ jobs:
           paths:
             - ~/.gradle
           key: v1-dependencies-{{ checksum "build.gradle" }}
+      - run: sudo apt-get install docker
       - setup_remote_docker
       - run: gradle test
 
