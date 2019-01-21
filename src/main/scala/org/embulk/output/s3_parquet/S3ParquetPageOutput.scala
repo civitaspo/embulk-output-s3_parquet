@@ -19,6 +19,8 @@ case class S3ParquetPageOutput(outputLocalFile: String,
                                destKey: String)
   extends TransactionalPageOutput {
 
+  private var isClosed: Boolean = false
+
   override def add(page: Page): Unit = {
     reader.setPage(page)
     while (reader.nextRecord()) {
@@ -30,14 +32,21 @@ case class S3ParquetPageOutput(outputLocalFile: String,
   }
 
   override def close(): Unit = {
-    writer.close()
+    synchronized {
+      if (!isClosed) {
+        writer.close()
+        isClosed = true
+      }
+    }
   }
 
   override def abort(): Unit = {
+    close()
     cleanup()
   }
 
   override def commit(): TaskReport = {
+    close()
     val result: UploadResult = aws.withTransferManager { xfer: TransferManager =>
       val upload: Upload = xfer.upload(destBucket, destKey, new File(outputLocalFile))
       upload.waitForUploadResult()
