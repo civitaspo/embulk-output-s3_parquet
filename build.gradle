@@ -30,7 +30,7 @@ dependencies {
         compile "org.apache.parquet:parquet-${v}:1.10.0"
     }
     compile 'org.apache.hadoop:hadoop-common:2.9.2'
-    compile 'org.xerial.snappy:snappy-java:1.1.7.2'
+    compile 'org.xerial.snappy:snappy-java:1.1.7.3'
 
     testCompile 'org.scalatest:scalatest_2.12:3.0.5'
     testCompile 'org.embulk:embulk-test:0.9.17'
