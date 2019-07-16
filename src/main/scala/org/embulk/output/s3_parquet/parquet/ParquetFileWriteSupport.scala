@@ -9,7 +9,7 @@ import org.apache.parquet.schema.MessageType
 import org.embulk.spi.{PageReader, Schema}
 import org.embulk.spi.time.TimestampFormatter
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 
 private[parquet] case class ParquetFileWriteSupport(schema: Schema,

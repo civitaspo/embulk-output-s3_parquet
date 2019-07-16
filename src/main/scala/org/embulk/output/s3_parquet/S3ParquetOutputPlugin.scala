@@ -16,7 +16,7 @@ import org.embulk.spi.{Exec, OutputPlugin, PageReader, Schema, TransactionalPage
 import org.embulk.spi.time.TimestampFormatter
 import org.embulk.spi.time.TimestampFormatter.TimestampColumnOption
 import org.embulk.spi.util.Timestamps
-import org.slf4j.Logger
+import org.slf4j.{Logger, LoggerFactory}
 
 
 object S3ParquetOutputPlugin
@@ -91,7 +91,7 @@ class S3ParquetOutputPlugin
     extends OutputPlugin
 {
 
-    val logger: Logger = Exec.getLogger(classOf[S3ParquetOutputPlugin])
+    val logger: Logger = LoggerFactory.getLogger(classOf[S3ParquetOutputPlugin])
 
     private def withPluginContextClassLoader[A](f: => A): A =
     {
@@ -185,7 +185,7 @@ class S3ParquetOutputPlugin
 
         val pageReader: PageReader = new PageReader(schema)
         val aws: Aws = Aws(task)
-        val timestampFormatters: Seq[TimestampFormatter] = Timestamps.newTimestampColumnFormatters(task, schema, task.getColumnOptions)
+        val timestampFormatters: Seq[TimestampFormatter] = Timestamps.newTimestampColumnFormatters(task, schema, task.getColumnOptions).toSeq
         val parquetWriter: ParquetWriter[PageReader] = ParquetFileWriter.builder()
             .withPath(bufferFile)
             .withSchema(schema)

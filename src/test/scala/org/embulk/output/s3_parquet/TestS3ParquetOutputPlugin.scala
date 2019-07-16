@@ -21,7 +21,7 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, DiagrammedAssertions, F
 import org.scalatest.junit.JUnitRunner
 
 import scala.annotation.meta.getter
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 @RunWith(classOf[JUnitRunner])
 class TestS3ParquetOutputPlugin
@@ -89,6 +89,7 @@ class TestS3ParquetOutputPlugin
       .stripLineEnd
       .split("\n")
       .map(record => record.split("\t").toSeq)
+      .toSeq
 
     inRecords.zipWithIndex.foreach {
       case (record, recordIndex) =>
