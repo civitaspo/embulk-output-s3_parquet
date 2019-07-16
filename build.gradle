@@ -36,7 +36,7 @@ dependencies {
     testCompile 'org.embulk:embulk-test:0.9.17'
     testCompile 'org.embulk:embulk-standards:0.9.17'
     testCompile 'cloud.localstack:localstack-utils:0.1.15'
-    testCompile 'org.apache.parquet:parquet-tools:1.8.0'
+    testCompile 'org.apache.parquet:parquet-tools:1.10.1'
     testCompile 'org.apache.hadoop:hadoop-client:2.9.2'
 }
 
