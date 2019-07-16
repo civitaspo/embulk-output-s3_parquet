@@ -9,25 +9,32 @@ import org.apache.parquet.schema.MessageType
 import org.embulk.spi.{PageReader, Schema}
 import org.embulk.spi.time.TimestampFormatter
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
+
 
 private[parquet] case class ParquetFileWriteSupport(schema: Schema,
-                              timestampFormatters: Seq[TimestampFormatter])
-  extends WriteSupport[PageReader] {
+                                                    timestampFormatters: Seq[TimestampFormatter])
+    extends WriteSupport[PageReader]
+{
 
-  private var currentParquetFileWriter: ParquetFileWriter = _
+    private var currentParquetFileWriter: ParquetFileWriter = _
 
-  override def init(configuration: Configuration): WriteContext = {
-    val messageType: MessageType = EmbulkMessageType.builder()
-      .withSchema(schema)
-      .build()
-    val metadata: Map[String, String] = Map.empty // NOTE: When is this used?
-    new WriteContext(messageType, metadata.asJava)
-  }
+    override def init(configuration: Configuration): WriteContext =
+    {
+        val messageType: MessageType = EmbulkMessageType.builder()
+            .withSchema(schema)
+            .build()
+        val metadata: Map[String, String] = Map.empty // NOTE: When is this used?
+        new WriteContext(messageType, metadata.asJava)
+    }
 
-  override def prepareForWrite(recordConsumer: RecordConsumer): Unit = {
-    currentParquetFileWriter = ParquetFileWriter(recordConsumer, schema, timestampFormatters)
-  }
+    override def prepareForWrite(recordConsumer: RecordConsumer): Unit =
+    {
+        currentParquetFileWriter = ParquetFileWriter(recordConsumer, schema, timestampFormatters)
+    }
 
-  override def write(record: PageReader): Unit = currentParquetFileWriter.write(record)
+    override def write(record: PageReader): Unit =
+    {
+        currentParquetFileWriter.write(record)
+    }
 }

@@ -2,7 +2,6 @@ plugins {
     id "scala"
     id "com.jfrog.bintray" version "1.1"
     id "com.github.jruby-gradle.base" version "1.5.0"
-    id "com.diffplug.gradle.spotless" version "3.13.0"
     id "com.adarshr.test-logger" version "1.6.0"  // For Pretty test logging
 }
 import com.github.jrubygradle.JRubyExec
@@ -20,24 +19,24 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 dependencies {
-    compile  "org.embulk:embulk-core:0.9.12"
-    provided "org.embulk:embulk-core:0.9.12"
+    compile  "org.embulk:embulk-core:0.9.17"
+    provided "org.embulk:embulk-core:0.9.17"
 
-    compile 'org.scala-lang:scala-library:2.12.8'
+    compile 'org.scala-lang:scala-library:2.13.0'
     ['s3', 'sts'].each { v ->
-        compile "com.amazonaws:aws-java-sdk-${v}:1.11.479"
+        compile "com.amazonaws:aws-java-sdk-${v}:1.11.592"
     }
     ['column', 'common', 'encoding', 'format', 'hadoop', 'jackson'].each { v ->
-        compile "org.apache.parquet:parquet-${v}:1.10.0"
+        compile "org.apache.parquet:parquet-${v}:1.10.1"
     }
     compile 'org.apache.hadoop:hadoop-common:2.9.2'
-    compile 'org.xerial.snappy:snappy-java:1.1.7.2'
+    compile 'org.xerial.snappy:snappy-java:1.1.7.3'
 
-    testCompile 'org.scalatest:scalatest_2.12:3.0.5'
-    testCompile 'org.embulk:embulk-test:0.9.12'
-    testCompile 'org.embulk:embulk-standards:0.9.12'
+    testCompile 'org.scalatest:scalatest_2.13:3.0.8'
+    testCompile 'org.embulk:embulk-test:0.9.17'
+    testCompile 'org.embulk:embulk-standards:0.9.17'
     testCompile 'cloud.localstack:localstack-utils:0.1.15'
-    testCompile 'org.apache.parquet:parquet-tools:1.8.0'
+    testCompile 'org.apache.parquet:parquet-tools:1.10.1'
     testCompile 'org.apache.hadoop:hadoop-client:2.9.2'
 }
 

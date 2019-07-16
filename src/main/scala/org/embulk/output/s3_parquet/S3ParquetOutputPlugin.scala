@@ -16,184 +16,194 @@ import org.embulk.spi.{Exec, OutputPlugin, PageReader, Schema, TransactionalPage
 import org.embulk.spi.time.TimestampFormatter
 import org.embulk.spi.time.TimestampFormatter.TimestampColumnOption
 import org.embulk.spi.util.Timestamps
-import org.slf4j.Logger
+import org.slf4j.{Logger, LoggerFactory}
 
-object S3ParquetOutputPlugin {
 
-  trait PluginTask
-    extends Task
-    with TimestampFormatter.Task
-    with Aws.Task {
+object S3ParquetOutputPlugin
+{
 
-    @Config("bucket")
-    def getBucket: String
+    trait PluginTask
+        extends Task
+            with TimestampFormatter.Task
+            with Aws.Task
+    {
 
-    @Config("path_prefix")
-    @ConfigDefault("\"\"")
-    def getPathPrefix: String
+        @Config("bucket")
+        def getBucket: String
 
-    @Config("sequence_format")
-    @ConfigDefault("\"%03d.%02d.\"")
-    def getSequenceFormat: String
+        @Config("path_prefix")
+        @ConfigDefault("\"\"")
+        def getPathPrefix: String
 
-    @Config("file_ext")
-    @ConfigDefault("\"parquet\"")
-    def getFileExt: String
+        @Config("sequence_format")
+        @ConfigDefault("\"%03d.%02d.\"")
+        def getSequenceFormat: String
 
-    @Config("compression_codec")
-    @ConfigDefault("\"uncompressed\"")
-    def getCompressionCodecString: String
+        @Config("file_ext")
+        @ConfigDefault("\"parquet\"")
+        def getFileExt: String
 
-    def setCompressionCodec(v: CompressionCodecName): Unit
+        @Config("compression_codec")
+        @ConfigDefault("\"uncompressed\"")
+        def getCompressionCodecString: String
 
-    def getCompressionCodec: CompressionCodecName
+        def setCompressionCodec(v: CompressionCodecName): Unit
 
-    @Config("column_options")
-    @ConfigDefault("{}")
-    def getColumnOptions: JMap[String, TimestampColumnOption]
+        def getCompressionCodec: CompressionCodecName
 
-    @Config("canned_acl")
-    @ConfigDefault("\"private\"")
-    def getCannedAclString: String
+        @Config("column_options")
+        @ConfigDefault("{}")
+        def getColumnOptions: JMap[String, TimestampColumnOption]
 
-    def setCannedAcl(v: CannedAccessControlList): Unit
+        @Config("canned_acl")
+        @ConfigDefault("\"private\"")
+        def getCannedAclString: String
 
-    def getCannedAcl: CannedAccessControlList
+        def setCannedAcl(v: CannedAccessControlList): Unit
 
-    @Config("block_size")
-    @ConfigDefault("null")
-    def getBlockSize: Optional[Int]
+        def getCannedAcl: CannedAccessControlList
 
-    @Config("page_size")
-    @ConfigDefault("null")
-    def getPageSize: Optional[Int]
+        @Config("block_size")
+        @ConfigDefault("null")
+        def getBlockSize: Optional[Int]
 
-    @Config("max_padding_size")
-    @ConfigDefault("null")
-    def getMaxPaddingSize: Optional[Int]
+        @Config("page_size")
+        @ConfigDefault("null")
+        def getPageSize: Optional[Int]
 
-    @Config("enable_dictionary_encoding")
-    @ConfigDefault("null")
-    def getEnableDictionaryEncoding: Optional[Boolean]
+        @Config("max_padding_size")
+        @ConfigDefault("null")
+        def getMaxPaddingSize: Optional[Int]
 
-    @Config("buffer_dir")
-    @ConfigDefault("null")
-    def getBufferDir: Optional[String]
+        @Config("enable_dictionary_encoding")
+        @ConfigDefault("null")
+        def getEnableDictionaryEncoding: Optional[Boolean]
 
-  }
+        @Config("buffer_dir")
+        @ConfigDefault("null")
+        def getBufferDir: Optional[String]
+
+    }
 
 }
 
 class S3ParquetOutputPlugin
-  extends OutputPlugin {
+    extends OutputPlugin
+{
 
-  val logger: Logger = Exec.getLogger(classOf[S3ParquetOutputPlugin])
+    val logger: Logger = LoggerFactory.getLogger(classOf[S3ParquetOutputPlugin])
 
-  private def withPluginContextClassLoader[A](f: => A): A = {
-    val original: ClassLoader = Thread.currentThread.getContextClassLoader
-    Thread.currentThread.setContextClassLoader(classOf[S3ParquetOutputPlugin].getClassLoader)
-    try f
-    finally Thread.currentThread.setContextClassLoader(original)
-  }
-
-  override def transaction(config: ConfigSource,
-                           schema: Schema,
-                           taskCount: Int,
-                           control: OutputPlugin.Control): ConfigDiff = {
-    val task: PluginTask = config.loadConfig(classOf[PluginTask])
-
-    withPluginContextClassLoader {
-      configure(task, schema)
-      control.run(task.dump)
+    private def withPluginContextClassLoader[A](f: => A): A =
+    {
+        val original: ClassLoader = Thread.currentThread.getContextClassLoader
+        Thread.currentThread.setContextClassLoader(classOf[S3ParquetOutputPlugin].getClassLoader)
+        try f
+        finally Thread.currentThread.setContextClassLoader(original)
     }
 
-    Exec.newConfigDiff
-  }
+    override def transaction(config: ConfigSource,
+                             schema: Schema,
+                             taskCount: Int,
+                             control: OutputPlugin.Control): ConfigDiff =
+    {
+        val task: PluginTask = config.loadConfig(classOf[PluginTask])
 
-  private def configure(task: PluginTask,
-                        schema: Schema): Unit = {
-    // sequence_format
-    try String.format(task.getSequenceFormat, 0: Integer, 0: Integer)
-    catch {
-      case e: IllegalFormatException => throw new ConfigException(s"Invalid sequence_format: ${task.getSequenceFormat}", e)
+        withPluginContextClassLoader {
+            configure(task, schema)
+            control.run(task.dump)
+        }
+
+        Exec.newConfigDiff
     }
 
-    // compression_codec
-    CompressionCodecName.values().find(v => v.name().toLowerCase(Locale.ENGLISH).equals(task.getCompressionCodecString)) match {
-      case Some(v) => task.setCompressionCodec(v)
-      case None    =>
-        val unsupported: String = task.getCompressionCodecString
-        val supported: String = CompressionCodecName.values().map(v => s"'${v.name().toLowerCase}'").mkString(", ")
-        throw new ConfigException(s"'$unsupported' is unsupported: `compression_codec` must be one of [$supported].")
+    private def configure(task: PluginTask,
+                          schema: Schema): Unit =
+    {
+        // sequence_format
+        try String.format(task.getSequenceFormat, 0: Integer, 0: Integer)
+        catch {
+            case e: IllegalFormatException => throw new ConfigException(s"Invalid sequence_format: ${task.getSequenceFormat}", e)
+        }
+
+        // compression_codec
+        CompressionCodecName.values().find(v => v.name().toLowerCase(Locale.ENGLISH).equals(task.getCompressionCodecString)) match {
+            case Some(v) => task.setCompressionCodec(v)
+            case None    =>
+                val unsupported: String = task.getCompressionCodecString
+                val supported: String = CompressionCodecName.values().map(v => s"'${v.name().toLowerCase}'").mkString(", ")
+                throw new ConfigException(s"'$unsupported' is unsupported: `compression_codec` must be one of [$supported].")
+        }
+
+        // column_options
+        task.getColumnOptions.forEach { (k: String,
+                                         _) =>
+            val c = schema.lookupColumn(k)
+            if (!c.getType.getName.equals("timestamp")) throw new ConfigException(s"column:$k is not 'timestamp' type.")
+        }
+
+        // canned_acl
+        CannedAccessControlList.values().find(v => v.toString.equals(task.getCannedAclString)) match {
+            case Some(v) => task.setCannedAcl(v)
+            case None    =>
+                val unsupported: String = task.getCannedAclString
+                val supported: String = CannedAccessControlList.values().map(v => s"'${v.toString}'").mkString(", ")
+                throw new ConfigException(s"'$unsupported' is unsupported: `canned_acl` must be one of [$supported].")
+        }
     }
 
-    // column_options
-    task.getColumnOptions.forEach { (k: String,
-                                     _) =>
-      val c = schema.lookupColumn(k)
-      if (!c.getType.getName.equals("timestamp")) throw new ConfigException(s"column:$k is not 'timestamp' type.")
+    override def resume(taskSource: TaskSource,
+                        schema: Schema,
+                        taskCount: Int,
+                        control: OutputPlugin.Control): ConfigDiff =
+    {
+        throw new UnsupportedOperationException("s3_parquet output plugin does not support resuming")
     }
 
-    // canned_acl
-    CannedAccessControlList.values().find(v => v.toString.equals(task.getCannedAclString)) match {
-      case Some(v) => task.setCannedAcl(v)
-      case None    =>
-        val unsupported: String = task.getCannedAclString
-        val supported: String = CannedAccessControlList.values().map(v => s"'${v.toString}'").mkString(", ")
-        throw new ConfigException(s"'$unsupported' is unsupported: `canned_acl` must be one of [$supported].")
+    override def cleanup(taskSource: TaskSource,
+                         schema: Schema,
+                         taskCount: Int,
+                         successTaskReports: JList[TaskReport]): Unit =
+    {
+        successTaskReports.forEach { tr =>
+            logger.info(
+                s"Created: s3://${tr.get(classOf[String], "bucket")}/${tr.get(classOf[String], "key")}, "
+                    + s"version_id: ${tr.get(classOf[String], "version_id", null)}, "
+                    + s"etag: ${tr.get(classOf[String], "etag", null)}")
+        }
     }
-  }
 
-  override def resume(taskSource: TaskSource,
+    override def open(taskSource: TaskSource,
                       schema: Schema,
-                      taskCount: Int,
-                      control: OutputPlugin.Control): ConfigDiff = {
-    throw new UnsupportedOperationException("s3_parquet output plugin does not support resuming")
-  }
+                      taskIndex: Int): TransactionalPageOutput =
+    {
+        val task = taskSource.loadTask(classOf[PluginTask])
+        val bufferDir: String = task.getBufferDir.orElse(Files.createTempDirectory("embulk-output-s3_parquet-").toString)
+        val bufferFile: String = Paths.get(bufferDir, s"embulk-output-s3_parquet-task-$taskIndex-0.parquet").toString
+        val destS3bucket: String = task.getBucket
+        val destS3Key: String = task.getPathPrefix + String.format(task.getSequenceFormat, taskIndex: Integer, 0: Integer) + task.getFileExt
 
-  override def cleanup(taskSource: TaskSource,
-                       schema: Schema,
-                       taskCount: Int,
-                       successTaskReports: JList[TaskReport]): Unit = {
-    successTaskReports.forEach { tr =>
-      logger.info(
-        s"Created: s3://${tr.get(classOf[String], "bucket")}/${tr.get(classOf[String], "key")}, "
-          + s"version_id: ${tr.get(classOf[String], "version_id", null)}, "
-          + s"etag: ${tr.get(classOf[String], "etag", null)}")
+
+        val pageReader: PageReader = new PageReader(schema)
+        val aws: Aws = Aws(task)
+        val timestampFormatters: Seq[TimestampFormatter] = Timestamps.newTimestampColumnFormatters(task, schema, task.getColumnOptions).toSeq
+        val parquetWriter: ParquetWriter[PageReader] = ParquetFileWriter.builder()
+            .withPath(bufferFile)
+            .withSchema(schema)
+            .withTimestampFormatters(timestampFormatters)
+            .withCompressionCodec(task.getCompressionCodec)
+            .withDictionaryEncoding(task.getEnableDictionaryEncoding.orElse(ParquetProperties.DEFAULT_IS_DICTIONARY_ENABLED))
+            .withDictionaryPageSize(task.getPageSize.orElse(ParquetProperties.DEFAULT_DICTIONARY_PAGE_SIZE))
+            .withMaxPaddingSize(task.getMaxPaddingSize.orElse(ParquetWriter.MAX_PADDING_SIZE_DEFAULT))
+            .withPageSize(task.getPageSize.orElse(ParquetProperties.DEFAULT_PAGE_SIZE))
+            .withRowGroupSize(task.getBlockSize.orElse(ParquetWriter.DEFAULT_BLOCK_SIZE))
+            .withValidation(ParquetWriter.DEFAULT_IS_VALIDATING_ENABLED)
+            .withWriteMode(org.apache.parquet.hadoop.ParquetFileWriter.Mode.CREATE)
+            .withWriterVersion(ParquetProperties.DEFAULT_WRITER_VERSION)
+            .build()
+
+        logger.info(s"Local Buffer File: $bufferFile, Destination: s3://$destS3bucket/$destS3Key")
+
+        S3ParquetPageOutput(bufferFile, pageReader, parquetWriter, aws, destS3bucket, destS3Key)
     }
-  }
-
-  override def open(taskSource: TaskSource,
-                    schema: Schema,
-                    taskIndex: Int): TransactionalPageOutput = {
-    val task = taskSource.loadTask(classOf[PluginTask])
-    val bufferDir: String = task.getBufferDir.orElse(Files.createTempDirectory("embulk-output-s3_parquet-").toString)
-    val bufferFile: String = Paths.get(bufferDir, s"embulk-output-s3_parquet-task-$taskIndex-0.parquet").toString
-    val destS3bucket: String = task.getBucket
-    val destS3Key: String = task.getPathPrefix + String.format(task.getSequenceFormat, taskIndex: Integer, 0: Integer) + task.getFileExt
-
-
-    val pageReader: PageReader = new PageReader(schema)
-    val aws: Aws = Aws(task)
-    val timestampFormatters: Seq[TimestampFormatter] = Timestamps.newTimestampColumnFormatters(task, schema, task.getColumnOptions)
-    val parquetWriter: ParquetWriter[PageReader] = ParquetFileWriter.builder()
-      .withPath(bufferFile)
-      .withSchema(schema)
-      .withTimestampFormatters(timestampFormatters)
-      .withCompressionCodec(task.getCompressionCodec)
-      .withDictionaryEncoding(task.getEnableDictionaryEncoding.orElse(ParquetProperties.DEFAULT_IS_DICTIONARY_ENABLED))
-      .withDictionaryPageSize(task.getPageSize.orElse(ParquetProperties.DEFAULT_DICTIONARY_PAGE_SIZE))
-      .withMaxPaddingSize(task.getMaxPaddingSize.orElse(ParquetWriter.MAX_PADDING_SIZE_DEFAULT))
-      .withPageSize(task.getPageSize.orElse(ParquetProperties.DEFAULT_PAGE_SIZE))
-      .withRowGroupSize(task.getBlockSize.orElse(ParquetWriter.DEFAULT_BLOCK_SIZE))
-      .withValidation(ParquetWriter.DEFAULT_IS_VALIDATING_ENABLED)
-      .withWriteMode(org.apache.parquet.hadoop.ParquetFileWriter.Mode.CREATE)
-      .withWriterVersion(ParquetProperties.DEFAULT_WRITER_VERSION)
-      .build()
-
-    logger.info(s"Local Buffer File: $bufferFile, Destination: s3://$destS3bucket/$destS3Key")
-
-    S3ParquetPageOutput(bufferFile, pageReader, parquetWriter, aws, destS3bucket, destS3Key)
-  }
 
 }
