@@ -83,6 +83,9 @@ object S3ParquetOutputPlugin
         @ConfigDefault("null")
         def getBufferDir: Optional[String]
 
+        @Config("catalog")
+        @ConfigDefault("null")
+        def getCatalog: Optional[CatalogRegistrator.Task]
     }
 
 }
@@ -111,6 +114,15 @@ class S3ParquetOutputPlugin
         withPluginContextClassLoader {
             configure(task, schema)
             control.run(task.dump)
+        }
+        task.getCatalog.ifPresent { catalog =>
+            val location = s"s3://${task.getBucket}/${task.getPathPrefix.replaceFirst("(.*/)[^/]+$", "$1")}"
+            val cr = CatalogRegistrator(aws = Aws(task),
+                                        task = catalog,
+                                        schema = schema,
+                                        location = location,
+                                        compressionCodec = task.getCompressionCodec)
+            cr.run()
         }
 
         Exec.newConfigDiff

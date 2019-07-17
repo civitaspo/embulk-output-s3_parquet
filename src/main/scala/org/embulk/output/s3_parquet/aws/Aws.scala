@@ -2,6 +2,7 @@ package org.embulk.output.s3_parquet.aws
 
 
 import com.amazonaws.client.builder.AwsClientBuilder
+import com.amazonaws.services.glue.{AWSGlue, AWSGlueClientBuilder}
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
 import com.amazonaws.services.s3.transfer.{TransferManager, TransferManagerBuilder}
 
@@ -41,6 +42,14 @@ class Aws(task: Aws.Task)
             try f(svc)
             finally svc.shutdownNow(false)
         }
+    }
+
+    def withGlue[A](f: AWSGlue => A): A =
+    {
+        val builder: AWSGlueClientBuilder = AWSGlueClientBuilder.standard()
+        val svc = createService(builder)
+        try f(svc)
+        finally svc.shutdown()
     }
 
     def createService[S <: AwsClientBuilder[S, T], T](builder: AwsClientBuilder[S, T]): T =
