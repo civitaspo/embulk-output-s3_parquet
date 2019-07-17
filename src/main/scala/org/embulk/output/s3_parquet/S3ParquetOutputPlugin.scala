@@ -11,7 +11,6 @@ import org.apache.parquet.hadoop.metadata.CompressionCodecName
 import org.embulk.config.{Config, ConfigDefault, ConfigDiff, ConfigException, ConfigSource, Task, TaskReport, TaskSource}
 import org.embulk.output.s3_parquet.S3ParquetOutputPlugin.PluginTask
 import org.embulk.output.s3_parquet.aws.Aws
-import org.embulk.output.s3_parquet.catalog.CatalogRegistrator
 import org.embulk.output.s3_parquet.parquet.ParquetFileWriter
 import org.embulk.spi.{Exec, OutputPlugin, PageReader, Schema, TransactionalPageOutput}
 import org.embulk.spi.time.TimestampFormatter

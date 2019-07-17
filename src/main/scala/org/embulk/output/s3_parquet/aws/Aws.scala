@@ -2,7 +2,7 @@ package org.embulk.output.s3_parquet.aws
 
 
 import com.amazonaws.client.builder.AwsClientBuilder
-import com.amazonaws.services.athena.{AmazonAthena, AmazonAthenaClientBuilder}
+import com.amazonaws.services.glue.{AWSGlue, AWSGlueClientBuilder}
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
 import com.amazonaws.services.s3.transfer.{TransferManager, TransferManagerBuilder}
 
@@ -44,8 +44,9 @@ class Aws(task: Aws.Task)
         }
     }
 
-    def withAthena[A](f: AmazonAthena => A): A ={
-        val builder: AmazonAthenaClientBuilder = AmazonAthenaClientBuilder.standard()
+    def withGlue[A](f: AWSGlue => A): A =
+    {
+        val builder: AWSGlueClientBuilder = AWSGlueClientBuilder.standard()
         val svc = createService(builder)
         try f(svc)
         finally svc.shutdown()
