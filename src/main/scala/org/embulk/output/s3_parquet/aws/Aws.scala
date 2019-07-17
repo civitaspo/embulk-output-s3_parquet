@@ -2,6 +2,7 @@ package org.embulk.output.s3_parquet.aws
 
 
 import com.amazonaws.client.builder.AwsClientBuilder
+import com.amazonaws.services.athena.{AmazonAthena, AmazonAthenaClientBuilder}
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
 import com.amazonaws.services.s3.transfer.{TransferManager, TransferManagerBuilder}
 
@@ -41,6 +42,13 @@ class Aws(task: Aws.Task)
             try f(svc)
             finally svc.shutdownNow(false)
         }
+    }
+
+    def withAthena[A](f: AmazonAthena => A): A ={
+        val builder: AmazonAthenaClientBuilder = AmazonAthenaClientBuilder.standard()
+        val svc = createService(builder)
+        try f(svc)
+        finally svc.shutdown()
     }
 
     def createService[S <: AwsClientBuilder[S, T], T](builder: AwsClientBuilder[S, T]): T =

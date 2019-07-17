@@ -11,6 +11,7 @@ import org.apache.parquet.hadoop.metadata.CompressionCodecName
 import org.embulk.config.{Config, ConfigDefault, ConfigDiff, ConfigException, ConfigSource, Task, TaskReport, TaskSource}
 import org.embulk.output.s3_parquet.S3ParquetOutputPlugin.PluginTask
 import org.embulk.output.s3_parquet.aws.Aws
+import org.embulk.output.s3_parquet.catalog.CatalogRegistrator
 import org.embulk.output.s3_parquet.parquet.ParquetFileWriter
 import org.embulk.spi.{Exec, OutputPlugin, PageReader, Schema, TransactionalPageOutput}
 import org.embulk.spi.time.TimestampFormatter
@@ -83,6 +84,9 @@ object S3ParquetOutputPlugin
         @ConfigDefault("null")
         def getBufferDir: Optional[String]
 
+        @Config("catalog")
+        @ConfigDefault("null")
+        def getCatalog: Optional[CatalogRegistrator.Task]
     }
 
 }
@@ -111,6 +115,15 @@ class S3ParquetOutputPlugin
         withPluginContextClassLoader {
             configure(task, schema)
             control.run(task.dump)
+        }
+        task.getCatalog.ifPresent { catalog =>
+            val location = s"s3://${task.getBucket}/${task.getPathPrefix.replaceFirst("(.*/)[^/]+$", "$1")}"
+            val cr = CatalogRegistrator(aws = Aws(task),
+                                        task = catalog,
+                                        schema = schema,
+                                        location = location,
+                                        compressionCodec = task.getCompressionCodec)
+            cr.run()
         }
 
         Exec.newConfigDiff
