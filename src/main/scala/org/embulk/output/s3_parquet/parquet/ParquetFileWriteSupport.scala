@@ -13,7 +13,8 @@ import scala.jdk.CollectionConverters._
 
 
 private[parquet] case class ParquetFileWriteSupport(schema: Schema,
-                                                    timestampFormatters: Seq[TimestampFormatter])
+                                                    timestampFormatters: Seq[TimestampFormatter],
+                                                    logicalTypeHandlers: LogicalTypeHandlerStore = LogicalTypeHandlerStore.empty)
     extends WriteSupport[PageReader]
 {
 
@@ -23,6 +24,7 @@ private[parquet] case class ParquetFileWriteSupport(schema: Schema,
     {
         val messageType: MessageType = EmbulkMessageType.builder()
             .withSchema(schema)
+            .withLogicalTypeHandlers(logicalTypeHandlers)
             .build()
         val metadata: Map[String, String] = Map.empty // NOTE: When is this used?
         new WriteContext(messageType, metadata.asJava)
@@ -30,7 +32,7 @@ private[parquet] case class ParquetFileWriteSupport(schema: Schema,
 
     override def prepareForWrite(recordConsumer: RecordConsumer): Unit =
     {
-        currentParquetFileWriter = ParquetFileWriter(recordConsumer, schema, timestampFormatters)
+        currentParquetFileWriter = ParquetFileWriter(recordConsumer, schema, timestampFormatters, logicalTypeHandlers)
     }
 
     override def write(record: PageReader): Unit =

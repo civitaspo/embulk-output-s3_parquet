@@ -1,0 +1,35 @@
+
+in:
+  type: file
+  path_prefix: ./example/data.tsv
+  parser:
+    type: csv
+    delimiter: "\t"
+    skip_header_lines: 0
+    null_string: ""
+    columns:
+      - { name: id, type: long }
+      - { name: description, type: string }
+      - { name: name, type: string }
+      - { name: t, type: timestamp, format: "%Y-%m-%d %H:%M:%S %z"}
+      - { name: payload, type: json}
+    stop_on_invalid_record: true
+
+out:
+  type: s3_parquet
+  bucket: my-bucket
+  path_prefix: path/to/my-obj.
+  file_ext: snappy.parquet
+  compression_codec: snappy
+  default_timezone: Asia/Tokyo
+  canned_acl: bucket-owner-full-control
+  column_options:
+    # It has higher priority than type_options.timestamp
+    t:
+      logical_type: "timestamp-micros"
+  type_options:
+    json:
+      logical_type: "json"
+    # It should be ignored by column_options on 't' column
+    timestamp:
+      logical_type: "timestamp-millis"
