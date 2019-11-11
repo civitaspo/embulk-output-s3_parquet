@@ -72,7 +72,7 @@ object EmbulkMessageType
         {
             val name = column.getName
 
-            val t = logicalTypeHandlers.get(column.getType, name) match {
+            val t = logicalTypeHandlers.get(name, column.getType) match {
                 case Some(h) => h.newSchemaFieldType(name)
                 case _ => new PrimitiveType(Type.Repetition.OPTIONAL, PrimitiveTypeName.BINARY, name, OriginalType.UTF8)
             }
@@ -84,7 +84,7 @@ object EmbulkMessageType
         {
             val name = column.getName
 
-            val t = logicalTypeHandlers.get(column.getType, name) match {
+            val t = logicalTypeHandlers.get(name, column.getType) match {
                 case Some(h) => h.newSchemaFieldType(name)
                 case _ => new PrimitiveType(Type.Repetition.OPTIONAL, PrimitiveTypeName.BINARY, name, OriginalType.UTF8)
             }
