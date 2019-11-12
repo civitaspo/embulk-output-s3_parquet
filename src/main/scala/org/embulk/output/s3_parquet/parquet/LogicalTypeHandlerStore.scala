@@ -48,8 +48,15 @@ object LogicalTypeHandlerStore {
     private val STRING_TO_LOGICAL_TYPE = Map[String, LogicalTypeHandler](
         "timestamp-millis" -> TimestampMillisLogicalTypeHandler(),
         "timestamp-micros" -> TimestampMicrosLogicalTypeHandler(),
+        "int8" -> Int8LogicalTypeHandler(),
+        "int16" -> Int16LogicalTypeHandler(),
+        "int32" -> Int32LogicalTypeHandler(),
+        "int64" -> Int64LogicalTypeHandler(),
+        "uint8" -> Uint8LogicalTypeHandler(),
+        "uint16" -> Uint16LogicalTypeHandler(),
+        "uint32" -> Uint32LogicalTypeHandler(),
+        "uint64" -> Uint64LogicalTypeHandler(),
         "json" -> JsonLogicalTypeHandler()
-        // TODO other types ...
     )
 
     def empty: LogicalTypeHandlerStore =
