@@ -9,7 +9,7 @@ import org.apache.parquet.column.ParquetProperties
 import org.apache.parquet.hadoop.ParquetWriter
 import org.apache.parquet.hadoop.metadata.CompressionCodecName
 import org.embulk.config.{Config, ConfigDefault, ConfigDiff, ConfigException, ConfigSource, Task, TaskReport, TaskSource}
-import org.embulk.output.s3_parquet.S3ParquetOutputPlugin.PluginTask
+import org.embulk.output.s3_parquet.S3ParquetOutputPlugin.{ColumnOptionTask, PluginTask}
 import org.embulk.output.s3_parquet.aws.Aws
 import org.embulk.output.s3_parquet.parquet.{LogicalTypeHandlerStore, ParquetFileWriter}
 import org.embulk.spi.{Exec, OutputPlugin, PageReader, Schema, TransactionalPageOutput}
@@ -160,9 +160,12 @@ class S3ParquetOutputPlugin
 
         // column_options
         task.getColumnOptions.forEach { (k: String,
-                                         _) =>
+                                         opt: ColumnOptionTask) =>
             val c = schema.lookupColumn(k)
-            if (!c.getType.getName.equals("timestamp")) throw new ConfigException(s"column:$k is not 'timestamp' type.")
+            val useTimestampOption = opt.getFormat.isPresent || opt.getTimeZoneId.isPresent
+            if (!c.getType.getName.equals("timestamp") && useTimestampOption) {
+                throw new ConfigException(s"column:$k is not 'timestamp' type.")
+            }
         }
 
         // canned_acl
