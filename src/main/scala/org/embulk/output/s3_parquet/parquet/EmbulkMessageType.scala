@@ -55,7 +55,15 @@ object EmbulkMessageType
 
         override def longColumn(column: Column): Unit =
         {
-            builder.add(new PrimitiveType(Type.Repetition.OPTIONAL, PrimitiveTypeName.INT64, column.getName))
+            val name = column.getName
+            val et = column.getType
+
+            val t = logicalTypeHandlers.get(name, et) match {
+                case Some(h) if h.isConvertible(et) => h.newSchemaFieldType(name)
+                case _ => new PrimitiveType(Type.Repetition.OPTIONAL, PrimitiveTypeName.INT64, column.getName)
+            }
+
+            builder.add(t)
         }
 
         override def doubleColumn(column: Column): Unit =
@@ -71,9 +79,10 @@ object EmbulkMessageType
         override def timestampColumn(column: Column): Unit =
         {
             val name = column.getName
+            val et = column.getType
 
-            val t = logicalTypeHandlers.get(name, column.getType) match {
-                case Some(h) => h.newSchemaFieldType(name)
+            val t = logicalTypeHandlers.get(name, et) match {
+                case Some(h) if h.isConvertible(et) => h.newSchemaFieldType(name)
                 case _ => new PrimitiveType(Type.Repetition.OPTIONAL, PrimitiveTypeName.BINARY, name, OriginalType.UTF8)
             }
 
@@ -83,9 +92,10 @@ object EmbulkMessageType
         override def jsonColumn(column: Column): Unit =
         {
             val name = column.getName
+            val et = column.getType
 
-            val t = logicalTypeHandlers.get(name, column.getType) match {
-                case Some(h) => h.newSchemaFieldType(name)
+            val t = logicalTypeHandlers.get(name, et) match {
+                case Some(h) if h.isConvertible(et) => h.newSchemaFieldType(name)
                 case _ => new PrimitiveType(Type.Repetition.OPTIONAL, PrimitiveTypeName.BINARY, name, OriginalType.UTF8)
             }
 

@@ -2,8 +2,11 @@ package org.embulk.output.s3_parquet.parquet
 
 import org.apache.parquet.io.api.{Binary, RecordConsumer}
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName
-import org.apache.parquet.schema.{OriginalType, PrimitiveType, Type}
+import org.apache.parquet.schema.{Type => PType}
+import org.apache.parquet.schema.{OriginalType, PrimitiveType}
 import org.embulk.spi.DataException
+import org.embulk.spi.`type`.{Type => EType}
+import org.embulk.spi.`type`.Types
 import org.embulk.spi.time.Timestamp
 import org.msgpack.value.Value
 
@@ -15,15 +18,19 @@ import org.msgpack.value.Value
  * TODO Support both of older and newer representation after 1.11+ is published and other middleware supports it.
  *
  */
-trait LogicalTypeHandler {
+sealed trait LogicalTypeHandler {
+    def isConvertible(t: EType): Boolean
+
     def newSchemaFieldType(name: String): PrimitiveType
 
     def consume(orig: Any, recordConsumer: RecordConsumer): Unit
 }
 
-private case class IntLogicalTypeHandler(ot: OriginalType) extends LogicalTypeHandler {
+abstract class IntLogicalTypeHandler(ot: OriginalType) extends LogicalTypeHandler {
+    override def isConvertible(t: EType): Boolean = t == Types.LONG
+
     override def newSchemaFieldType(name: String): PrimitiveType =
-        new PrimitiveType(Type.Repetition.OPTIONAL, PrimitiveTypeName.INT64, name, ot)
+        new PrimitiveType(PType.Repetition.OPTIONAL, PrimitiveTypeName.INT64, name, ot)
 
     override def consume(orig: Any, recordConsumer: RecordConsumer): Unit =
         orig match {
@@ -32,9 +39,11 @@ private case class IntLogicalTypeHandler(ot: OriginalType) extends LogicalTypeHa
         }
 }
 
-case class TimestampMillisLogicalTypeHandler() extends LogicalTypeHandler {
+object TimestampMillisLogicalTypeHandler extends LogicalTypeHandler {
+    override def isConvertible(t: EType): Boolean = t == Types.TIMESTAMP
+
     override def newSchemaFieldType(name: String): PrimitiveType =
-        new PrimitiveType(Type.Repetition.OPTIONAL, PrimitiveTypeName.INT64, name, OriginalType.TIMESTAMP_MILLIS)
+        new PrimitiveType(PType.Repetition.OPTIONAL, PrimitiveTypeName.INT64, name, OriginalType.TIMESTAMP_MILLIS)
 
     override def consume(orig: Any, recordConsumer: RecordConsumer): Unit =
         orig match {
@@ -43,9 +52,11 @@ case class TimestampMillisLogicalTypeHandler() extends LogicalTypeHandler {
         }
 }
 
-case class TimestampMicrosLogicalTypeHandler() extends LogicalTypeHandler {
+object TimestampMicrosLogicalTypeHandler extends LogicalTypeHandler {
+    override def isConvertible(t: EType): Boolean = t == Types.TIMESTAMP
+
     override def newSchemaFieldType(name: String): PrimitiveType =
-        new PrimitiveType(Type.Repetition.OPTIONAL, PrimitiveTypeName.INT64, name, OriginalType.TIMESTAMP_MICROS)
+        new PrimitiveType(PType.Repetition.OPTIONAL, PrimitiveTypeName.INT64, name, OriginalType.TIMESTAMP_MICROS)
 
     override def consume(orig: Any, recordConsumer: RecordConsumer): Unit =
         orig match {
@@ -56,19 +67,21 @@ case class TimestampMicrosLogicalTypeHandler() extends LogicalTypeHandler {
         }
 }
 
-case class Int8LogicalTypeHandler() extends IntLogicalTypeHandler(OriginalType.INT_8)
-case class Int16LogicalTypeHandler() extends IntLogicalTypeHandler(OriginalType.INT_16)
-case class Int32LogicalTypeHandler() extends IntLogicalTypeHandler(OriginalType.INT_32)
-case class Int64LogicalTypeHandler() extends IntLogicalTypeHandler(OriginalType.INT_64)
+object Int8LogicalTypeHandler extends IntLogicalTypeHandler(OriginalType.INT_8)
+object Int16LogicalTypeHandler extends IntLogicalTypeHandler(OriginalType.INT_16)
+object Int32LogicalTypeHandler extends IntLogicalTypeHandler(OriginalType.INT_32)
+object Int64LogicalTypeHandler extends IntLogicalTypeHandler(OriginalType.INT_64)
 
-case class Uint8LogicalTypeHandler() extends IntLogicalTypeHandler(OriginalType.UINT_8)
-case class Uint16LogicalTypeHandler() extends IntLogicalTypeHandler(OriginalType.UINT_16)
-case class Uint32LogicalTypeHandler() extends IntLogicalTypeHandler(OriginalType.UINT_32)
-case class Uint64LogicalTypeHandler() extends IntLogicalTypeHandler(OriginalType.UINT_64)
+object Uint8LogicalTypeHandler extends IntLogicalTypeHandler(OriginalType.UINT_8)
+object Uint16LogicalTypeHandler extends IntLogicalTypeHandler(OriginalType.UINT_16)
+object Uint32LogicalTypeHandler extends IntLogicalTypeHandler(OriginalType.UINT_32)
+object Uint64LogicalTypeHandler extends IntLogicalTypeHandler(OriginalType.UINT_64)
 
-case class JsonLogicalTypeHandler() extends LogicalTypeHandler {
+object JsonLogicalTypeHandler extends LogicalTypeHandler {
+    override def isConvertible(t: EType): Boolean = t == Types.JSON
+
     override def newSchemaFieldType(name: String): PrimitiveType =
-        new PrimitiveType(Type.Repetition.OPTIONAL, PrimitiveTypeName.BINARY, name, OriginalType.JSON)
+        new PrimitiveType(PType.Repetition.OPTIONAL, PrimitiveTypeName.BINARY, name, OriginalType.JSON)
 
     override def consume(orig: Any, recordConsumer: RecordConsumer): Unit =
         orig match {
