@@ -1,5 +1,6 @@
 package org.embulk.output.s3_parquet.parquet
 
+
 import com.google.common.collect.ImmutableList
 import org.apache.parquet.schema.{MessageType, OriginalType, PrimitiveType, Type}
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName
@@ -60,7 +61,7 @@ object EmbulkMessageType
 
             val t = logicalTypeHandlers.get(name, et) match {
                 case Some(h) if h.isConvertible(et) => h.newSchemaFieldType(name)
-                case _ => new PrimitiveType(Type.Repetition.OPTIONAL, PrimitiveTypeName.INT64, column.getName)
+                case _                              => new PrimitiveType(Type.Repetition.OPTIONAL, PrimitiveTypeName.INT64, column.getName)
             }
 
             builder.add(t)
@@ -83,7 +84,7 @@ object EmbulkMessageType
 
             val t = logicalTypeHandlers.get(name, et) match {
                 case Some(h) if h.isConvertible(et) => h.newSchemaFieldType(name)
-                case _ => new PrimitiveType(Type.Repetition.OPTIONAL, PrimitiveTypeName.BINARY, name, OriginalType.UTF8)
+                case _                              => new PrimitiveType(Type.Repetition.OPTIONAL, PrimitiveTypeName.BINARY, name, OriginalType.UTF8)
             }
 
             builder.add(t)
@@ -96,7 +97,7 @@ object EmbulkMessageType
 
             val t = logicalTypeHandlers.get(name, et) match {
                 case Some(h) if h.isConvertible(et) => h.newSchemaFieldType(name)
-                case _ => new PrimitiveType(Type.Repetition.OPTIONAL, PrimitiveTypeName.BINARY, name, OriginalType.UTF8)
+                case _                              => new PrimitiveType(Type.Repetition.OPTIONAL, PrimitiveTypeName.BINARY, name, OriginalType.UTF8)
             }
 
             builder.add(t)

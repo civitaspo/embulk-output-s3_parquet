@@ -92,11 +92,14 @@ object S3ParquetOutputPlugin
         def getTypeOptions: JMap[String, TypeOptionTask]
     }
 
-    trait ColumnOptionTask extends Task with TimestampColumnOption with LogicalTypeOption
+    trait ColumnOptionTask
+        extends Task with TimestampColumnOption with LogicalTypeOption
 
-    trait TypeOptionTask extends Task with LogicalTypeOption
+    trait TypeOptionTask
+        extends Task with LogicalTypeOption
 
-    trait LogicalTypeOption {
+    trait LogicalTypeOption
+    {
         @Config("logical_type")
         def getLogicalType: Optional[String]
     }

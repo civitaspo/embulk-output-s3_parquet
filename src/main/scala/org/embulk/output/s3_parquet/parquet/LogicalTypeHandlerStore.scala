@@ -1,5 +1,6 @@
 package org.embulk.output.s3_parquet.parquet
 
+
 import org.embulk.spi.`type`.{Type, Types}
 import java.util.{Map => JMap}
 
@@ -8,34 +9,44 @@ import org.embulk.output.s3_parquet.S3ParquetOutputPlugin.{ColumnOptionTask, Typ
 
 import scala.jdk.CollectionConverters._
 
+
 /**
  * A storage has mapping from logical type query (column name, type) to handler.
  *
  * @param fromEmbulkType
  * @param fromColumnName
  */
-case class LogicalTypeHandlerStore private (fromEmbulkType: Map[Type, LogicalTypeHandler],
-                                            fromColumnName: Map[String, LogicalTypeHandler]) {
+case class LogicalTypeHandlerStore private(fromEmbulkType: Map[Type, LogicalTypeHandler],
+                                           fromColumnName: Map[String, LogicalTypeHandler])
+{
 
     // Try column name lookup, then column type
-    def get(n: String, t: Type): Option[LogicalTypeHandler] =
+    def get(n: String,
+            t: Type): Option[LogicalTypeHandler] =
+    {
         get(n) match {
             case Some(h) => Some(h)
-            case _ =>
+            case _       =>
                 get(t) match {
                     case Some(h) => Some(h)
-                    case _ => None
+                    case _       => None
                 }
         }
+    }
 
     def get(t: Type): Option[LogicalTypeHandler] =
+    {
         fromEmbulkType.get(t)
+    }
 
     def get(n: String): Option[LogicalTypeHandler] =
+    {
         fromColumnName.get(n)
+    }
 }
 
-object LogicalTypeHandlerStore {
+object LogicalTypeHandlerStore
+{
     private val STRING_TO_EMBULK_TYPE = Map[String, Type](
         "boolean" -> Types.BOOLEAN,
         "long" -> Types.LONG,
@@ -43,7 +54,7 @@ object LogicalTypeHandlerStore {
         "string" -> Types.STRING,
         "timestamp" -> Types.TIMESTAMP,
         "json" -> Types.JSON
-    )
+        )
 
     // Listed only older logical types that we can convert from embulk type
     private val STRING_TO_LOGICAL_TYPE = Map[String, LogicalTypeHandler](
@@ -58,12 +69,16 @@ object LogicalTypeHandlerStore {
         "uint32" -> Uint32LogicalTypeHandler,
         "uint64" -> Uint64LogicalTypeHandler,
         "json" -> JsonLogicalTypeHandler
-    )
+        )
 
     def empty: LogicalTypeHandlerStore =
+    {
         LogicalTypeHandlerStore(Map.empty[Type, LogicalTypeHandler], Map.empty[String, LogicalTypeHandler])
+    }
 
-    def fromEmbulkOptions(typeOpts: JMap[String, TypeOptionTask], columnOpts: JMap[String, ColumnOptionTask]): LogicalTypeHandlerStore = {
+    def fromEmbulkOptions(typeOpts: JMap[String, TypeOptionTask],
+                          columnOpts: JMap[String, ColumnOptionTask]): LogicalTypeHandlerStore =
+    {
         val fromEmbulkType = typeOpts.asScala
             .filter(_._2.getLogicalType.isPresent)
             .map[Type, LogicalTypeHandler] { case (k, v) =>
@@ -71,7 +86,7 @@ object LogicalTypeHandlerStore {
                 val h = STRING_TO_LOGICAL_TYPE.get(v.getLogicalType.get)
                 (t, h) match {
                     case (Some(tt), Some(hh)) => (tt, hh)
-                    case _ => throw new ConfigException("invalid logical types in type_options")
+                    case _                    => throw new ConfigException("invalid logical types in type_options")
                 }
             }
             .toMap
@@ -82,7 +97,7 @@ object LogicalTypeHandlerStore {
                 val h = STRING_TO_LOGICAL_TYPE.get(v.getLogicalType.get)
                 h match {
                     case Some(hh) => (k, hh)
-                    case _ => throw new ConfigException("invalid logical types in column_options")
+                    case _        => throw new ConfigException("invalid logical types in column_options")
                 }
             }
             .toMap

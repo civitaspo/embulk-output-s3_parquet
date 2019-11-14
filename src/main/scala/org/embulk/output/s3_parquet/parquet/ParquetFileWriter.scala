@@ -20,35 +20,35 @@ object ParquetFileWriter
         extends ParquetWriter.Builder[PageReader, Builder](path)
     {
 
-      def withPath(path: Path): Builder =
-      {
-        copy(path = path)
-      }
+        def withPath(path: Path): Builder =
+        {
+            copy(path = path)
+        }
 
-      def withPath(pathString: String): Builder =
-      {
-        copy(path = new Path(pathString))
-      }
+        def withPath(pathString: String): Builder =
+        {
+            copy(path = new Path(pathString))
+        }
 
-      def withSchema(schema: Schema): Builder =
-      {
-        copy(schema = schema)
-      }
+        def withSchema(schema: Schema): Builder =
+        {
+            copy(schema = schema)
+        }
 
-      def withTimestampFormatters(timestampFormatters: Seq[TimestampFormatter]): Builder =
-      {
-        copy(timestampFormatters = timestampFormatters)
-      }
+        def withTimestampFormatters(timestampFormatters: Seq[TimestampFormatter]): Builder =
+        {
+            copy(timestampFormatters = timestampFormatters)
+        }
 
-      def withLogicalTypeHandlers(logicalTypeHandlers: LogicalTypeHandlerStore): Builder =
-      {
-        copy(logicalTypeHandlers = logicalTypeHandlers)
-      }
+        def withLogicalTypeHandlers(logicalTypeHandlers: LogicalTypeHandlerStore): Builder =
+        {
+            copy(logicalTypeHandlers = logicalTypeHandlers)
+        }
 
-      override def self(): Builder =
-      {
-        this
-      }
+        override def self(): Builder =
+        {
+            this
+        }
 
         override def getWriteSupport(conf: Configuration): WriteSupport[PageReader] =
         {
@@ -56,10 +56,10 @@ object ParquetFileWriter
         }
     }
 
-  def builder(): Builder =
-  {
-    Builder()
-  }
+    def builder(): Builder =
+    {
+        Builder()
+    }
 
 }
 
@@ -70,7 +70,7 @@ private[parquet] case class ParquetFileWriter(recordConsumer: RecordConsumer,
                                               logicalTypeHandlers: LogicalTypeHandlerStore = LogicalTypeHandlerStore.empty)
 {
 
-  def write(record: PageReader): Unit =
+    def write(record: PageReader): Unit =
     {
         recordConsumer.startMessage()
         writeRecord(record)
@@ -126,13 +126,13 @@ private[parquet] case class ParquetFileWriter(recordConsumer: RecordConsumer,
                     withWriteFieldContext(column, {
                         val t = record.getTimestamp(column)
 
-                      logicalTypeHandlers.get(column.getName, column.getType) match {
+                        logicalTypeHandlers.get(column.getName, column.getType) match {
                             case Some(h) =>
-                              h.consume(t, recordConsumer)
-                            case _ =>
-                              val ft = timestampFormatters(column.getIndex).format(t)
-                              val bin = Binary.fromString(ft)
-                              recordConsumer.addBinary(bin)
+                                h.consume(t, recordConsumer)
+                            case _       =>
+                                val ft = timestampFormatters(column.getIndex).format(t)
+                                val bin = Binary.fromString(ft)
+                                recordConsumer.addBinary(bin)
                         }
                     })
                 })
@@ -147,7 +147,7 @@ private[parquet] case class ParquetFileWriter(recordConsumer: RecordConsumer,
                         logicalTypeHandlers.get(column.getName, column.getType) match {
                             case Some(h) =>
                                 h.consume(msgPack, recordConsumer)
-                            case _ =>
+                            case _       =>
                                 val bin = Binary.fromString(msgPack.toJson)
                                 recordConsumer.addBinary(bin)
                         }
