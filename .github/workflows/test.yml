@@ -7,6 +7,13 @@ jobs:
   test:
 
     runs-on: ubuntu-latest
+    services:
+      localstack:
+        image: localstack/localstack
+        ports:
+          - 4572:4572
+        env:
+          SERVICES: s3
 
     steps:
     - uses: actions/checkout@v1
