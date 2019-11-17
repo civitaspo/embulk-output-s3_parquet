@@ -6,11 +6,10 @@ import java.util.Optional
 import com.google.common.base.{Optional => GOptional}
 import org.embulk.config.{ConfigException, TaskSource}
 import org.embulk.output.s3_parquet.S3ParquetOutputPlugin.{ColumnOptionTask, TypeOptionTask}
-import org.embulk.spi.`type`.{Type => EType}
-import org.embulk.spi.`type`.Types
+import org.embulk.spi.`type`.{Types, Type => EType}
 import org.junit.runner.RunWith
 import org.scalatest.FunSuite
-import org.scalatest.junit.JUnitRunner
+import org.scalatestplus.junit.JUnitRunner
 
 import scala.jdk.CollectionConverters._
 import scala.util.Try
@@ -120,44 +119,44 @@ class TestLogicalTypeHandlerStore
     private case class DummyTypeOptionTask(lt: Optional[String])
         extends TypeOptionTask
     {
-      override def getLogicalType: Optional[String] =
-      {
-        lt
-      }
+        override def getLogicalType: Optional[String] =
+        {
+            lt
+        }
 
-      override def validate(): Unit =
+        override def validate(): Unit =
         {}
 
-      override def dump(): TaskSource =
-      {
-        null
-      }
+        override def dump(): TaskSource =
+        {
+            null
+        }
     }
 
     private case class DummyColumnOptionTask(lt: Optional[String])
         extends ColumnOptionTask
     {
-      override def getTimeZoneId: GOptional[String] =
-      {
-        GOptional.absent[String]
-      }
+        override def getTimeZoneId: GOptional[String] =
+        {
+            GOptional.absent[String]
+        }
 
-      override def getFormat: GOptional[String] =
-      {
-        GOptional.absent[String]
-      }
+        override def getFormat: GOptional[String] =
+        {
+            GOptional.absent[String]
+        }
 
-      override def getLogicalType: Optional[String] =
-      {
-        lt
-      }
+        override def getLogicalType: Optional[String] =
+        {
+            lt
+        }
 
-      override def validate(): Unit =
+        override def validate(): Unit =
         {}
 
-      override def dump(): TaskSource =
-      {
-        null
-      }
+        override def dump(): TaskSource =
+        {
+            null
+        }
     }
 }
