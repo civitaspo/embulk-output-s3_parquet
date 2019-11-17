@@ -9,9 +9,9 @@ import org.apache.parquet.column.ParquetProperties
 import org.apache.parquet.hadoop.ParquetWriter
 import org.apache.parquet.hadoop.metadata.CompressionCodecName
 import org.embulk.config.{Config, ConfigDefault, ConfigDiff, ConfigException, ConfigSource, Task, TaskReport, TaskSource}
-import org.embulk.output.s3_parquet.S3ParquetOutputPlugin.PluginTask
+import org.embulk.output.s3_parquet.S3ParquetOutputPlugin.{ColumnOptionTask, PluginTask}
 import org.embulk.output.s3_parquet.aws.Aws
-import org.embulk.output.s3_parquet.parquet.ParquetFileWriter
+import org.embulk.output.s3_parquet.parquet.{LogicalTypeHandlerStore, ParquetFileWriter}
 import org.embulk.spi.{Exec, OutputPlugin, PageReader, Schema, TransactionalPageOutput}
 import org.embulk.spi.time.TimestampFormatter
 import org.embulk.spi.time.TimestampFormatter.TimestampColumnOption
@@ -53,7 +53,7 @@ object S3ParquetOutputPlugin
 
         @Config("column_options")
         @ConfigDefault("{}")
-        def getColumnOptions: JMap[String, TimestampColumnOption]
+        def getColumnOptions: JMap[String, ColumnOptionTask]
 
         @Config("canned_acl")
         @ConfigDefault("\"private\"")
@@ -86,8 +86,23 @@ object S3ParquetOutputPlugin
         @Config("catalog")
         @ConfigDefault("null")
         def getCatalog: Optional[CatalogRegistrator.Task]
+
+        @Config("type_options")
+        @ConfigDefault("{}")
+        def getTypeOptions: JMap[String, TypeOptionTask]
     }
 
+    trait ColumnOptionTask
+        extends Task with TimestampColumnOption with LogicalTypeOption
+
+    trait TypeOptionTask
+        extends Task with LogicalTypeOption
+
+    trait LogicalTypeOption
+    {
+        @Config("logical_type")
+        def getLogicalType: Optional[String]
+    }
 }
 
 class S3ParquetOutputPlugin
@@ -148,9 +163,12 @@ class S3ParquetOutputPlugin
 
         // column_options
         task.getColumnOptions.forEach { (k: String,
-                                         _) =>
+                                         opt: ColumnOptionTask) =>
             val c = schema.lookupColumn(k)
-            if (!c.getType.getName.equals("timestamp")) throw new ConfigException(s"column:$k is not 'timestamp' type.")
+            val useTimestampOption = opt.getFormat.isPresent || opt.getTimeZoneId.isPresent
+            if (!c.getType.getName.equals("timestamp") && useTimestampOption) {
+                throw new ConfigException(s"column:$k is not 'timestamp' type.")
+            }
         }
 
         // canned_acl
@@ -198,9 +216,11 @@ class S3ParquetOutputPlugin
         val pageReader: PageReader = new PageReader(schema)
         val aws: Aws = Aws(task)
         val timestampFormatters: Seq[TimestampFormatter] = Timestamps.newTimestampColumnFormatters(task, schema, task.getColumnOptions).toSeq
+        val logicalTypeHandlers = LogicalTypeHandlerStore.fromEmbulkOptions(task.getTypeOptions, task.getColumnOptions)
         val parquetWriter: ParquetWriter[PageReader] = ParquetFileWriter.builder()
             .withPath(bufferFile)
             .withSchema(schema)
+            .withLogicalTypeHandlers(logicalTypeHandlers)
             .withTimestampFormatters(timestampFormatters)
             .withCompressionCodec(task.getCompressionCodec)
             .withDictionaryEncoding(task.getEnableDictionaryEncoding.orElse(ParquetProperties.DEFAULT_IS_DICTIONARY_ENABLED))

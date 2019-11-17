@@ -22,6 +22,7 @@
 - **column_options**: a map whose keys are name of columns, and values are configuration with following parameters (optional)
   - **timezone**: timezone if type of this column is timestamp. If not set, **default_timezone** is used. (string, optional)
   - **format**: timestamp format if type of this column is timestamp. If not set, **default_timestamp_format**: is used. (string, optional)
+  - **logical_type**: a Parquet logical type name (`timestamp-millis`, `timestamp-micros`, `json`, `int*`, `uint*`) (string, optional)
 - **canned_acl**: grants one of [canned ACLs](https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#CannedACL) for created objects (string, default: `private`)
 - **block_size**: The block size is the size of a row group being buffered in memory. This limits the memory usage when writing. Larger values will improve the I/O when reading but consume more memory when writing. (int, default: `134217728` (128MB))
 - **page_size**: The page size is for compression. When reading, each page can be decompressed independently. A block is composed of pages. The page is the smallest unit that must be read fully to access a single record. If this value is too small, the compression will deteriorate. (int, default: `1048576` (1MB))
@@ -75,6 +76,8 @@
   - **user** proxy user (string, optional)
   - **password** proxy password (string, optional)
 - **buffer_dir**: buffer directory for parquet files to be uploaded on S3 (string, default: Create a Temporary Directory)
+- **type_options**:  a map whose keys are name of embulk type(`boolean`, `long`, `double`, `string`, `timestamp`, `json`), and values are configuration with following parameters (optional)
+  - **logical_type**: a Parquet logical type name (`timestamp-millis`, `timestamp-micros`, `json`, `int*`, `uint*`) (string, optional)
 
 
 ## Example
@@ -92,7 +95,8 @@ out:
 
 ## Note
 
-* The current implementation does not support [LogicalTypes](https://github.com/apache/parquet-format/blob/2b38663/LogicalTypes.md). I will implement them later as **column_options**. So, currently **timestamp** type and **json** type are stored as UTF-8 String. Please be careful.  
+* The current Parquet [LogicalTypes](https://github.com/apache/parquet-format/blob/2b38663/LogicalTypes.md) implementation does only old representation.
+* Some kind of LogicalTypes are sometimes not supported on your middleware. Be careful to giving logical type name.
 
 ## Development
 
