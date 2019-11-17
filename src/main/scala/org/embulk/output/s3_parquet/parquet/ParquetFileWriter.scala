@@ -15,52 +15,59 @@ object ParquetFileWriter
 
     case class Builder(path: Path = null,
                        schema: Schema = null,
-                       timestampFormatters: Seq[TimestampFormatter] = null)
+                       timestampFormatters: Seq[TimestampFormatter] = null,
+                       logicalTypeHandlers: LogicalTypeHandlerStore = LogicalTypeHandlerStore.empty)
         extends ParquetWriter.Builder[PageReader, Builder](path)
     {
 
-      def withPath(path: Path): Builder =
-      {
-        copy(path = path)
-      }
+        def withPath(path: Path): Builder =
+        {
+            copy(path = path)
+        }
 
-      def withPath(pathString: String): Builder =
-      {
-        copy(path = new Path(pathString))
-      }
+        def withPath(pathString: String): Builder =
+        {
+            copy(path = new Path(pathString))
+        }
 
-      def withSchema(schema: Schema): Builder =
-      {
-        copy(schema = schema)
-      }
+        def withSchema(schema: Schema): Builder =
+        {
+            copy(schema = schema)
+        }
 
-      def withTimestampFormatters(timestampFormatters: Seq[TimestampFormatter]): Builder =
-      {
-        copy(timestampFormatters = timestampFormatters)
-      }
+        def withTimestampFormatters(timestampFormatters: Seq[TimestampFormatter]): Builder =
+        {
+            copy(timestampFormatters = timestampFormatters)
+        }
 
-      override def self(): Builder =
-      {
-        this
-      }
+        def withLogicalTypeHandlers(logicalTypeHandlers: LogicalTypeHandlerStore): Builder =
+        {
+            copy(logicalTypeHandlers = logicalTypeHandlers)
+        }
+
+        override def self(): Builder =
+        {
+            this
+        }
 
         override def getWriteSupport(conf: Configuration): WriteSupport[PageReader] =
         {
-            ParquetFileWriteSupport(schema, timestampFormatters)
+            ParquetFileWriteSupport(schema, timestampFormatters, logicalTypeHandlers)
         }
     }
 
-  def builder(): Builder =
-  {
-    Builder()
-  }
+    def builder(): Builder =
+    {
+        Builder()
+    }
 
 }
 
 
 private[parquet] case class ParquetFileWriter(recordConsumer: RecordConsumer,
                                               schema: Schema,
-                                              timestampFormatters: Seq[TimestampFormatter])
+                                              timestampFormatters: Seq[TimestampFormatter],
+                                              logicalTypeHandlers: LogicalTypeHandlerStore = LogicalTypeHandlerStore.empty)
 {
 
     def write(record: PageReader): Unit =
@@ -117,11 +124,16 @@ private[parquet] case class ParquetFileWriter(recordConsumer: RecordConsumer,
             {
                 nullOr(column, {
                     withWriteFieldContext(column, {
-                        // TODO: is a correct way to convert for parquet ?
                         val t = record.getTimestamp(column)
-                        val ft = timestampFormatters(column.getIndex).format(t)
-                        val bin = Binary.fromString(ft)
-                        recordConsumer.addBinary(bin)
+
+                        logicalTypeHandlers.get(column.getName, column.getType) match {
+                            case Some(h) =>
+                                h.consume(t, recordConsumer)
+                            case _       =>
+                                val ft = timestampFormatters(column.getIndex).format(t)
+                                val bin = Binary.fromString(ft)
+                                recordConsumer.addBinary(bin)
+                        }
                     })
                 })
             }
@@ -130,10 +142,15 @@ private[parquet] case class ParquetFileWriter(recordConsumer: RecordConsumer,
             {
                 nullOr(column, {
                     withWriteFieldContext(column, {
-                        // TODO: is a correct way to convert for parquet ?
                         val msgPack = record.getJson(column)
-                        val bin = Binary.fromString(msgPack.toJson)
-                        recordConsumer.addBinary(bin)
+
+                        logicalTypeHandlers.get(column.getName, column.getType) match {
+                            case Some(h) =>
+                                h.consume(msgPack, recordConsumer)
+                            case _       =>
+                                val bin = Binary.fromString(msgPack.toJson)
+                                recordConsumer.addBinary(bin)
+                        }
                     })
                 })
             }

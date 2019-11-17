@@ -1,0 +1,36 @@
+
+in:
+  type: file
+  path_prefix: ./example/data.tsv
+  parser:
+    type: csv
+    delimiter: "\t"
+    skip_header_lines: 0
+    null_string: ""
+    columns:
+      - { name: id, type: long }
+      - { name: description, type: string }
+      - { name: name, type: string }
+      - { name: t, type: timestamp, format: "%Y-%m-%d %H:%M:%S %z"}
+      - { name: payload, type: json}
+    stop_on_invalid_record: true
+
+out:
+  type: s3_parquet
+  bucket: dev-baikal-workspace
+  path_prefix: path/to/my-obj-2.
+  file_ext: snappy.parquet
+  compression_codec: snappy
+  default_timezone: Asia/Tokyo
+  canned_acl: bucket-owner-full-control
+  column_options:
+    id:
+      logical_type: "int64"
+    payload:
+      logical_type: "json"
+  type_options:
+    timestamp:
+      logical_type: "timestamp-millis"
+  catalog:
+    database: example_db
+    table: example_tbl
