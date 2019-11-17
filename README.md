@@ -110,6 +110,8 @@ $ embulk run example/config.yml -Ilib
 ### Run test:
 
 ```shell
+## Run fake S3 with localstack
+$ docker run -it --rm -p 4572:4572 -e SERVICES=s3 localstack/localstack
 $ ./gradlew test
 ```
 
@@ -125,7 +127,6 @@ Fix [build.gradle](./build.gradle), then
 
 ```shell
 $ ./gradlew gemPush
-
 ```
 
 ## ChangeLog
