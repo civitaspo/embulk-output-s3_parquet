@@ -51,9 +51,10 @@ object CatalogRegistrator
               schema: Schema,
               location: String,
               compressionCodec: CompressionCodecName,
-              loggerOption: Option[Logger] = None): CatalogRegistrator =
+              loggerOption: Option[Logger] = None,
+              parquetColumnLogicalTypes: Map[String, String] = Map.empty): CatalogRegistrator =
     {
-        new CatalogRegistrator(aws, task, schema, location, compressionCodec, loggerOption)
+        new CatalogRegistrator(aws, task, schema, location, compressionCodec, loggerOption, parquetColumnLogicalTypes)
     }
 }
 
@@ -62,7 +63,8 @@ class CatalogRegistrator(aws: Aws,
                          schema: Schema,
                          location: String,
                          compressionCodec: CompressionCodecName,
-                         loggerOption: Option[Logger] = None)
+                         loggerOption: Option[Logger] = None,
+                         parquetColumnLogicalTypes: Map[String, String] = Map.empty)
 {
     val logger: Logger = loggerOption.getOrElse(LoggerFactory.getLogger(classOf[CatalogRegistrator]))
 
@@ -150,14 +152,36 @@ class CatalogRegistrator(aws: Aws,
         schema.getColumns.asScala.toSeq.map { c =>
             val cType: String =
                 if (columnOptions.contains(c.getName)) columnOptions(c.getName).getType
-                else convertEmbulkType2GlueType(c.getType)
+                else if (parquetColumnLogicalTypes.contains(c.getName)) convertParquetLogicalTypeToGlueType(parquetColumnLogicalTypes(c.getName))
+                else convertEmbulkTypeToGlueType(c.getType)
             new Column()
                 .withName(c.getName)
                 .withType(cType)
         }
     }
 
-    private def convertEmbulkType2GlueType(t: Type): String =
+    private def convertParquetLogicalTypeToGlueType(t: String): String =
+    {
+        t match {
+            case "timestamp-millis" => "timestamp"
+            case "timestamp-micros" => "bigint" // Glue cannot recognize timestamp-micros.
+            case "int8"             => "tinyint"
+            case "int16"            => "smallint"
+            case "int32"            => "int"
+            case "int64"            => "bigint"
+            case "uint8"            => "smallint" // Glue tinyint is a minimum value of -2^7 and a maximum value of 2^7-1
+            case "uint16"           => "int" // Glue smallint is a minimum value of -2^15 and a maximum value of 2^15-1.
+            case "uint32"           => "bigint" // Glue int is a minimum value of-2^31 and a maximum value of 2^31-1.
+            case "uint64"           => throw new ConfigException("Cannot convert uint64 to Glue data types automatically" +
+                                                                     " because the Glue bigint supports a 64-bit signed integer." +
+                                                                     " Please use `catalog.column_options` to define the type.")
+            case "json"             => "string"
+            case _                  => throw new ConfigException(s"Unsupported a parquet logical type: $t. Please use `catalog.column_options` to define the type.")
+        }
+
+    }
+
+    private def convertEmbulkTypeToGlueType(t: Type): String =
     {
         t match {
             case _: BooleanType   => "boolean"

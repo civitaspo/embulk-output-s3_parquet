@@ -18,6 +18,9 @@ import org.embulk.spi.time.TimestampFormatter.TimestampColumnOption
 import org.embulk.spi.util.Timestamps
 import org.slf4j.{Logger, LoggerFactory}
 
+import scala.jdk.CollectionConverters._
+import scala.util.chaining._
+
 
 object S3ParquetOutputPlugin
 {
@@ -132,11 +135,26 @@ class S3ParquetOutputPlugin
         }
         task.getCatalog.ifPresent { catalog =>
             val location = s"s3://${task.getBucket}/${task.getPathPrefix.replaceFirst("(.*/)[^/]+$", "$1")}"
+            val parquetColumnLogicalTypes: Map[String, String] = Map.newBuilder[String, String].pipe {builder =>
+                val cOptions = task.getColumnOptions.asScala
+                val tOptions = task.getTypeOptions.asScala
+                schema.getColumns.asScala.foreach {c =>
+                    cOptions.get(c.getName)
+                    if (cOptions.contains(c.getName) && cOptions(c.getName).getLogicalType.isPresent) {
+                        builder.addOne(c.getName -> cOptions(c.getName).getLogicalType.get())
+                    }
+                    else if (tOptions.contains(c.getType.getName) && tOptions(c.getType.getName).getLogicalType.isPresent) {
+                        builder.addOne(c.getName -> tOptions(c.getType.getName).getLogicalType.get())
+                    }
+                }
+                builder.result()
+            }
             val cr = CatalogRegistrator(aws = Aws(task),
                                         task = catalog,
                                         schema = schema,
                                         location = location,
-                                        compressionCodec = task.getCompressionCodec)
+                                        compressionCodec = task.getCompressionCodec,
+                                        parquetColumnLogicalTypes = parquetColumnLogicalTypes)
             cr.run()
         }
 
