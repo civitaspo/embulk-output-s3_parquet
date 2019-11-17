@@ -30,7 +30,7 @@
 - **page_size**: The page size is for compression. When reading, each page can be decompressed independently. A block is composed of pages. The page is the smallest unit that must be read fully to access a single record. If this value is too small, the compression will deteriorate. (int, default: `1048576` (1MB))
 - **max_padding_size**: The max size (bytes) to write as padding and the min size of a row group (int, default: `8388608` (8MB))
 - **enable_dictionary_encoding**: The boolean value is to enable/disable dictionary encoding. (boolean, default: `true`)
-- **auth_method**: name of mechanism to authenticate requests (`"basic"`, `"env"`, `"instance"`, `"profile"`, `"properties"`, `"anonymous"`, or `"session"`, default: `"default"`)
+- **auth_method**: name of mechanism to authenticate requests (`"basic"`, `"env"`, `"instance"`, `"profile"`, `"properties"`, `"anonymous"`, `"session"`, `"web_identity_token"`, default: `"default"`)
   - `"basic"`: uses **access_key_id** and **secret_access_key** to authenticate.
   - `"env"`: uses `AWS_ACCESS_KEY_ID` (or `AWS_ACCESS_KEY`) and `AWS_SECRET_KEY` (or `AWS_SECRET_ACCESS_KEY`) environment variables.
   - `"instance"`: uses EC2 instance profile or attached ECS task role.
@@ -47,6 +47,7 @@
   - `"anonymous"`: uses anonymous access. This auth method can access only public files.
   - `"session"`: uses temporary-generated **access_key_id**, **secret_access_key** and **session_token**.
   - `"assume_role"`: uses temporary-generated credentials by assuming **role_arn** role.
+  - `"web_identity_token"`: uses temporary-generated credentials by assuming **role_arn** role with web identity.
   - `"default"`: uses AWS SDK's default strategy to look up available credentials from runtime environment. This method behaves like the combination of the following methods.
     1. `"env"`
     1. `"properties"`
@@ -57,10 +58,11 @@
 - **access_key_id**: aws access key id. this is required when **auth_method** is `"basic"` or `"session"`. (string, optional)
 - **secret_access_key**: aws secret access key. this is required when **auth_method** is `"basic"` or `"session"`. (string, optional)
 - **session_token**: aws session token. this is required when **auth_method** is `"session"`. (string, optional)
-- **role_arn**: arn of the role to assume. this is required for **auth_method** is `"assume_role"`. (string, optional)
-- **role_session_name**: an identifier for the assumed role session. this is required when **auth_method** is `"assume_role"`. (string, optional)  
+- **role_arn**: arn of the role to assume. this is required for **auth_method** is `"assume_role"` or `"web_identity_token"`. (string, optional)
+- **role_session_name**: an identifier for the assumed role session. this is required when **auth_method** is `"assume_role"` or `"web_identity_token"`. (string, optional)
 - **role_external_id**: a unique identifier that is used by third parties when assuming roles in their customers' accounts. this is optionally used for **auth_method**: `"assume_role"`. (string, optional)
-- **role_session_duration_seconds**: duration, in seconds, of the role session. this is optionally used for **auth_method**: `"assume_role"`. (int, optional) 
+- **role_session_duration_seconds**: duration, in seconds, of the role session. this is optionally used for **auth_method**: `"assume_role"`. (int, optional)
+- **web_identity_token_file**: the absolute path to the web identity token file. this is required when **auth_method** is `"web_identity_token"`. (string, optional)
 - **scope_down_policy**: an iam policy in json format. this is optionally used for **auth_method**: `"assume_role"`. (string, optional)
 - **catalog**: Register a table if this option is specified (optional)
   - **catalog_id**: glue data catalog id if you use a catalog different from account/region default catalog. (string, optional)

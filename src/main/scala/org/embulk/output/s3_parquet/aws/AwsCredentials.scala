@@ -3,7 +3,7 @@ package org.embulk.output.s3_parquet.aws
 
 import java.util.Optional
 
-import com.amazonaws.auth.{AnonymousAWSCredentials, AWSCredentialsProvider, AWSStaticCredentialsProvider, BasicAWSCredentials, BasicSessionCredentials, DefaultAWSCredentialsProviderChain, EC2ContainerCredentialsProviderWrapper, EnvironmentVariableCredentialsProvider, STSAssumeRoleSessionCredentialsProvider, SystemPropertiesCredentialsProvider}
+import com.amazonaws.auth.{AnonymousAWSCredentials, AWSCredentialsProvider, AWSStaticCredentialsProvider, BasicAWSCredentials, BasicSessionCredentials, DefaultAWSCredentialsProviderChain, EC2ContainerCredentialsProviderWrapper, EnvironmentVariableCredentialsProvider, STSAssumeRoleSessionCredentialsProvider, SystemPropertiesCredentialsProvider, WebIdentityTokenCredentialsProvider}
 import com.amazonaws.auth.profile.{ProfileCredentialsProvider, ProfilesConfigFile}
 import org.embulk.config.{Config, ConfigDefault, ConfigException}
 import org.embulk.output.s3_parquet.aws.AwsCredentials.Task
@@ -60,6 +60,9 @@ object AwsCredentials
         @ConfigDefault("null")
         def getScopeDownPolicy: Optional[String]
 
+        @Config("web_identity_token_file")
+        @ConfigDefault("null")
+        def getWebIdentityTokenFile: Optional[String]
     }
 
     def apply(task: Task): AwsCredentials =
@@ -118,6 +121,13 @@ class AwsCredentials(task: Task)
                 task.getScopeDownPolicy.ifPresent(v => builder.withScopeDownPolicy(v))
 
                 builder.build()
+
+            case "web_identity_token" =>
+                WebIdentityTokenCredentialsProvider.builder()
+                    .roleArn(getRequiredOption(task.getRoleArn, "role_arn"))
+                    .roleSessionName(getRequiredOption(task.getRoleSessionName, "role_session_name"))
+                    .webIdentityTokenFile(getRequiredOption(task.getWebIdentityTokenFile, "web_identity_token_file"))
+                    .build()
 
             case "default" =>
                 new DefaultAWSCredentialsProviderChain
