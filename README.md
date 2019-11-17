@@ -24,7 +24,7 @@
 - **column_options**: a map whose keys are name of columns, and values are configuration with following parameters (optional)
   - **timezone**: timezone if type of this column is timestamp. If not set, **default_timezone** is used. (string, optional)
   - **format**: timestamp format if type of this column is timestamp. If not set, **default_timestamp_format**: is used. (string, optional)
-  - **logical_type**: a Parquet logical type name (`timestamp-millis`, `timestamp-micros`, `json`, `int*`, `uint*`) (string, optional)
+  - **logical_type**: a Parquet logical type name (`timestamp-millis`, `timestamp-micros`, `json`, `int8`, `int16`, `int32`, `int64`, `uint8`, `uint16`, `uint32`, `uint64`) (string, optional)
 - **canned_acl**: grants one of [canned ACLs](https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#CannedACL) for created objects (string, default: `private`)
 - **block_size**: The block size is the size of a row group being buffered in memory. This limits the memory usage when writing. Larger values will improve the I/O when reading but consume more memory when writing. (int, default: `134217728` (128MB))
 - **page_size**: The page size is for compression. When reading, each page can be decompressed independently. A block is composed of pages. The page is the smallest unit that must be read fully to access a single record. If this value is too small, the compression will deteriorate. (int, default: `1048576` (1MB))
@@ -67,7 +67,31 @@
   - **database**: The name of the database (string, required)
   - **table**: The name of the table (string, required)
   - **column_options**: a key-value pairs where key is a column name and value is options for the column. (string to options map, default: `{}`)
-    - **type**: type of a column when this plugin creates new tables (e.g. `STRING`, `BIGINT`) (string, default: depends on input column type. `BIGINT` if input column type is `long`, `BOOLEAN` if boolean, `DOUBLE` if `double`, `STRING` if `string`, `STRING` if `timestamp`, `STRING` if `json`)
+    - **type**: type of column when this plugin creates new tables (e.g. `string`, `bigint`) (string, default: depends on the input embulk column type, or the parquet logical type. See the below table)
+    
+      |embulk column type|glue data type|
+      |:---|:---|
+      |long|bigint|
+      |boolean|boolean|
+      |double|double|
+      |string|string|
+      |timestamp|string|
+      |json|string|
+      
+      |parquet logical type|glue data type|note|
+      |:---|:---|:---|
+      |timestamp-millis|timestamp||
+      |timestamp-micros|long|Glue cannot recognize timestamp-micros.|
+      |int8|tinyint||
+      |int16|smallint||
+      |int32|int||
+      |int64|bigint||
+      |uint8|smallint|Glue tinyint is a minimum value of -2^7 and a maximum value of 2^7-1|
+      |uint16|int|Glue smallint is a minimum value of -2^15 and a maximum value of 2^15-1.|
+      |uint32|bigint|Glue int is a minimum value of-2^31 and a maximum value of 2^31-1.|
+      |uint64|ConfigException|Glue bigint supports only a 64-bit signed integer.|
+      |json|string||
+
   - **operation_if_exists**: operation if the table already exist. Available operations are `"delete"` and `"skip"` (string, default: `"delete"`)
 - **endpoint**: The AWS Service endpoint (string, optional)
 - **region**: The AWS region (string, optional)
@@ -79,7 +103,7 @@
   - **password** proxy password (string, optional)
 - **buffer_dir**: buffer directory for parquet files to be uploaded on S3 (string, default: Create a Temporary Directory)
 - **type_options**:  a map whose keys are name of embulk type(`boolean`, `long`, `double`, `string`, `timestamp`, `json`), and values are configuration with following parameters (optional)
-  - **logical_type**: a Parquet logical type name (`timestamp-millis`, `timestamp-micros`, `json`, `int*`, `uint*`) (string, optional)
+  - **logical_type**: a Parquet logical type name (`timestamp-millis`, `timestamp-micros`, `json`, `int8`, `int16`, `int32`, `int64`, `uint8`, `uint16`, `uint32`, `uint64`) (string, optional)
 
 
 ## Example
