@@ -18,7 +18,7 @@ import org.embulk.test.{EmbulkTests, TestingEmbulk}
 import org.junit.Rule
 import org.junit.runner.RunWith
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, DiagrammedAssertions, FunSuite}
-import org.scalatest.junit.JUnitRunner
+import org.scalatestplus.junit.JUnitRunner
 
 import scala.annotation.meta.getter
 import scala.jdk.CollectionConverters._
