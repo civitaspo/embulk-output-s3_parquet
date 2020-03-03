@@ -10,3 +10,4 @@ build/
 /.metadata/
 .classpath
 .project
+/bin/
