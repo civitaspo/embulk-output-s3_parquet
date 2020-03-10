@@ -3,6 +3,7 @@ plugins {
     id "com.jfrog.bintray" version "1.1"
     id "com.github.jruby-gradle.base" version "1.5.0"
     id "com.adarshr.test-logger" version "1.6.0"  // For Pretty test logging
+    id "com.diffplug.gradle.spotless" version "3.27.1"
 }
 import com.github.jrubygradle.JRubyExec
 repositories {
@@ -13,34 +14,43 @@ configurations {
     provided
 }
 
-version = "0.1.0"
+version = "0.2.0"
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 dependencies {
-    compile  "org.embulk:embulk-core:0.9.20"
-    provided "org.embulk:embulk-core:0.9.20"
+    compile  "org.embulk:embulk-core:0.9.23"
+    provided "org.embulk:embulk-core:0.9.23"
 
     compile 'org.scala-lang:scala-library:2.13.1'
     ['glue', 's3', 'sts'].each { v ->
-        compile "com.amazonaws:aws-java-sdk-${v}:1.11.676"
+        compile "com.amazonaws:aws-java-sdk-${v}:1.11.739"
     }
-    ['column', 'common', 'encoding', 'format', 'hadoop', 'jackson'].each { v ->
-        compile "org.apache.parquet:parquet-${v}:1.10.1"
+    ['column', 'common', 'encoding', 'hadoop', 'jackson'].each { v ->
+        compile "org.apache.parquet:parquet-${v}:1.11.0"
     }
+    // ref. https://github.com/apache/parquet-mr/blob/apache-parquet-1.11.0/pom.xml#L85
+    compile 'org.apache.parquet:parquet-format:2.7.0'
     compile 'org.apache.hadoop:hadoop-common:2.9.2'
     compile 'org.xerial.snappy:snappy-java:1.1.7.3'
 
+    ['test', 'standards', 'deps-buffer', 'deps-config'].each { v ->
+        testCompile "org.embulk:embulk-${v}:0.9.23"
+    }
     testCompile 'org.scalatest:scalatest_2.13:3.0.8'
-    testCompile 'org.embulk:embulk-test:0.9.20'
-    testCompile 'org.embulk:embulk-standards:0.9.20'
-    testCompile 'org.apache.parquet:parquet-tools:1.10.1'
+    testCompile 'org.apache.parquet:parquet-tools:1.11.0'
     testCompile 'org.apache.hadoop:hadoop-client:2.9.2'
 }
 
 testlogger {
     theme "mocha"
+}
+
+spotless {
+    scala {
+        scalafmt('2.3.2').configFile('.scalafmt.conf')
+    }
 }
 
 task classpath(type: Copy, dependsOn: ["jar"]) {

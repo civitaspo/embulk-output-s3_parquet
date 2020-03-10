@@ -17,7 +17,9 @@ in:
 
 out:
   type: s3_parquet
-  bucket: my-bucket
+  bucket: example
+  region: us-east-1
+  endpoint: http://127.0.0.1:4572
   path_prefix: path/to/my-obj-2.
   file_ext: snappy.parquet
   compression_codec: snappy

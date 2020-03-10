@@ -1,6 +1,5 @@
 package org.embulk.output.s3_parquet.parquet
 
-
 import org.apache.hadoop.conf.Configuration
 import org.apache.parquet.hadoop.api.WriteSupport
 import org.apache.parquet.hadoop.api.WriteSupport.WriteContext
@@ -11,32 +10,34 @@ import org.embulk.spi.time.TimestampFormatter
 
 import scala.jdk.CollectionConverters._
 
+private[parquet] case class ParquetFileWriteSupport(
+    schema: Schema,
+    timestampFormatters: Seq[TimestampFormatter],
+    logicalTypeHandlers: LogicalTypeHandlerStore = LogicalTypeHandlerStore.empty
+) extends WriteSupport[PageReader] {
 
-private[parquet] case class ParquetFileWriteSupport(schema: Schema,
-                                                    timestampFormatters: Seq[TimestampFormatter],
-                                                    logicalTypeHandlers: LogicalTypeHandlerStore = LogicalTypeHandlerStore.empty)
-    extends WriteSupport[PageReader]
-{
+  private var currentParquetFileWriter: ParquetFileWriter = _
 
-    private var currentParquetFileWriter: ParquetFileWriter = _
+  override def init(configuration: Configuration): WriteContext = {
+    val messageType: MessageType = EmbulkMessageType
+      .builder()
+      .withSchema(schema)
+      .withLogicalTypeHandlers(logicalTypeHandlers)
+      .build()
+    val metadata: Map[String, String] = Map.empty // NOTE: When is this used?
+    new WriteContext(messageType, metadata.asJava)
+  }
 
-    override def init(configuration: Configuration): WriteContext =
-    {
-        val messageType: MessageType = EmbulkMessageType.builder()
-            .withSchema(schema)
-            .withLogicalTypeHandlers(logicalTypeHandlers)
-            .build()
-        val metadata: Map[String, String] = Map.empty // NOTE: When is this used?
-        new WriteContext(messageType, metadata.asJava)
-    }
+  override def prepareForWrite(recordConsumer: RecordConsumer): Unit = {
+    currentParquetFileWriter = ParquetFileWriter(
+      recordConsumer,
+      schema,
+      timestampFormatters,
+      logicalTypeHandlers
+    )
+  }
 
-    override def prepareForWrite(recordConsumer: RecordConsumer): Unit =
-    {
-        currentParquetFileWriter = ParquetFileWriter(recordConsumer, schema, timestampFormatters, logicalTypeHandlers)
-    }
-
-    override def write(record: PageReader): Unit =
-    {
-        currentParquetFileWriter.write(record)
-    }
+  override def write(record: PageReader): Unit = {
+    currentParquetFileWriter.write(record)
+  }
 }

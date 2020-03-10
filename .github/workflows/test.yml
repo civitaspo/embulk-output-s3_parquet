@@ -21,6 +21,8 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 1.8
+    - name: scalafmt
+      run: ./gradlew spotlessCheck
     - name: Test with Gradle
       run: ./gradlew test
 

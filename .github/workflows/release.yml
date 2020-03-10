@@ -25,6 +25,9 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 1.8
+    - name: scalafmt
+      if: github.event.pull_request.merged == true
+      run: ./gradlew spotlessCheck
     - name: Test with Gradle
       if: github.event.pull_request.merged == true
       run: ./gradlew test
