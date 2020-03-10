@@ -30,7 +30,8 @@ dependencies {
     ['column', 'common', 'encoding', 'hadoop', 'jackson'].each { v ->
         compile "org.apache.parquet:parquet-${v}:1.11.0"
     }
-    compile 'org.apache.parquet:parquet-format:2.8.0'
+    // ref. https://github.com/apache/parquet-mr/blob/apache-parquet-1.11.0/pom.xml#L85
+    compile 'org.apache.parquet:parquet-format:2.7.0'
     compile 'org.apache.hadoop:hadoop-common:2.9.2'
     compile 'org.xerial.snappy:snappy-java:1.1.7.3'
 
