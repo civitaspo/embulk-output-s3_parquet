@@ -20,8 +20,8 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 dependencies {
-    compile  "org.embulk:embulk-core:0.9.20"
-    provided "org.embulk:embulk-core:0.9.20"
+    compile  "org.embulk:embulk-core:0.9.23"
+    provided "org.embulk:embulk-core:0.9.23"
 
     compile 'org.scala-lang:scala-library:2.13.1'
     ['glue', 's3', 'sts'].each { v ->
@@ -35,8 +35,10 @@ dependencies {
     compile 'org.xerial.snappy:snappy-java:1.1.7.3'
 
     testCompile 'org.scalatest:scalatest_2.13:3.0.8'
-    testCompile 'org.embulk:embulk-test:0.9.20'
-    testCompile 'org.embulk:embulk-standards:0.9.20'
+    testCompile 'org.embulk:embulk-test:0.9.23'
+    testCompile 'org.embulk:embulk-standards:0.9.23'
+    testCompile "org.embulk:embulk-deps-buffer:0.9.23"
+    testCompile "org.embulk:embulk-deps-config:0.9.23"
     testCompile 'org.apache.parquet:parquet-tools:1.11.0'
     testCompile 'org.apache.hadoop:hadoop-client:2.9.2'
 }
