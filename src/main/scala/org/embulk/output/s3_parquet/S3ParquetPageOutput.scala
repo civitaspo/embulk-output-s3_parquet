@@ -33,7 +33,9 @@ case class S3ParquetPageOutput(
   override def close(): Unit = {
     synchronized {
       if (!isClosed) {
-        writer.close()
+        ContextClassLoaderSwapper.usingPluginClass {
+          writer.close()
+        }
         isClosed = true
       }
     }
@@ -46,11 +48,12 @@ case class S3ParquetPageOutput(
 
   override def commit(): TaskReport = {
     close()
-    val result: UploadResult = aws.withTransferManager {
-      xfer: TransferManager =>
+    val result: UploadResult = ContextClassLoaderSwapper.usingPluginClass {
+      aws.withTransferManager { xfer: TransferManager =>
         val upload: Upload =
           xfer.upload(destBucket, destKey, new File(outputLocalFile))
         upload.waitForUploadResult()
+      }
     }
     cleanup()
     Exec
