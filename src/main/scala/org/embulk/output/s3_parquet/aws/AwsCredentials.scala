@@ -89,7 +89,7 @@ class AwsCredentials(task: Task) {
         new AWSStaticCredentialsProvider(
           new BasicAWSCredentials(
             getRequiredOption(task.getAccessKeyId, "access_key_id"),
-            getRequiredOption(task.getAccessKeyId, "secret_access_key")
+            getRequiredOption(task.getSecretAccessKey, "secret_access_key")
           )
         )
 
