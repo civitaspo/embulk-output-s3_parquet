@@ -133,15 +133,6 @@ class S3ParquetOutputPlugin extends OutputPlugin {
 
   val logger: Logger = LoggerFactory.getLogger(classOf[S3ParquetOutputPlugin])
 
-  private def withPluginContextClassLoader[A](f: => A): A = {
-    val original: ClassLoader = Thread.currentThread.getContextClassLoader
-    Thread.currentThread.setContextClassLoader(
-      classOf[S3ParquetOutputPlugin].getClassLoader
-    )
-    try f
-    finally Thread.currentThread.setContextClassLoader(original)
-  }
-
   override def transaction(
       config: ConfigSource,
       schema: Schema,
@@ -150,10 +141,9 @@ class S3ParquetOutputPlugin extends OutputPlugin {
   ): ConfigDiff = {
     val task: PluginTask = config.loadConfig(classOf[PluginTask])
 
-    withPluginContextClassLoader {
-      configure(task, schema)
-      control.run(task.dump)
-    }
+    configure(task, schema)
+    control.run(task.dump)
+
     task.getCatalog.ifPresent { catalog =>
       val location =
         s"s3://${task.getBucket}/${task.getPathPrefix.replaceFirst("(.*/)[^/]+$", "$1")}"
@@ -303,34 +293,43 @@ class S3ParquetOutputPlugin extends OutputPlugin {
       task.getTypeOptions,
       task.getColumnOptions
     )
-    val parquetWriter: ParquetWriter[PageReader] = ParquetFileWriter
-      .builder()
-      .withPath(bufferFile)
-      .withSchema(schema)
-      .withLogicalTypeHandlers(logicalTypeHandlers)
-      .withTimestampFormatters(timestampFormatters)
-      .withCompressionCodec(task.getCompressionCodec)
-      .withDictionaryEncoding(
-        task.getEnableDictionaryEncoding.orElse(
-          ParquetProperties.DEFAULT_IS_DICTIONARY_ENABLED
-        )
-      )
-      .withDictionaryPageSize(
-        task.getPageSize.orElse(ParquetProperties.DEFAULT_DICTIONARY_PAGE_SIZE)
-      )
-      .withMaxPaddingSize(
-        task.getMaxPaddingSize.orElse(ParquetWriter.MAX_PADDING_SIZE_DEFAULT)
-      )
-      .withPageSize(
-        task.getPageSize.orElse(ParquetProperties.DEFAULT_PAGE_SIZE)
-      )
-      .withRowGroupSize(
-        task.getBlockSize.orElse(ParquetWriter.DEFAULT_BLOCK_SIZE)
-      )
-      .withValidation(ParquetWriter.DEFAULT_IS_VALIDATING_ENABLED)
-      .withWriteMode(org.apache.parquet.hadoop.ParquetFileWriter.Mode.CREATE)
-      .withWriterVersion(ParquetProperties.DEFAULT_WRITER_VERSION)
-      .build()
+    val parquetWriter: ParquetWriter[PageReader] =
+      ContextClassLoaderSwapper.usingPluginClass {
+        ParquetFileWriter
+          .builder()
+          .withPath(bufferFile)
+          .withSchema(schema)
+          .withLogicalTypeHandlers(logicalTypeHandlers)
+          .withTimestampFormatters(timestampFormatters)
+          .withCompressionCodec(task.getCompressionCodec)
+          .withDictionaryEncoding(
+            task.getEnableDictionaryEncoding.orElse(
+              ParquetProperties.DEFAULT_IS_DICTIONARY_ENABLED
+            )
+          )
+          .withDictionaryPageSize(
+            task.getPageSize.orElse(
+              ParquetProperties.DEFAULT_DICTIONARY_PAGE_SIZE
+            )
+          )
+          .withMaxPaddingSize(
+            task.getMaxPaddingSize.orElse(
+              ParquetWriter.MAX_PADDING_SIZE_DEFAULT
+            )
+          )
+          .withPageSize(
+            task.getPageSize.orElse(ParquetProperties.DEFAULT_PAGE_SIZE)
+          )
+          .withRowGroupSize(
+            task.getBlockSize.orElse(ParquetWriter.DEFAULT_BLOCK_SIZE)
+          )
+          .withValidation(ParquetWriter.DEFAULT_IS_VALIDATING_ENABLED)
+          .withWriteMode(
+            org.apache.parquet.hadoop.ParquetFileWriter.Mode.CREATE
+          )
+          .withWriterVersion(ParquetProperties.DEFAULT_WRITER_VERSION)
+          .build()
+      }
 
     logger.info(
       s"Local Buffer File: $bufferFile, Destination: s3://$destS3bucket/$destS3Key"
