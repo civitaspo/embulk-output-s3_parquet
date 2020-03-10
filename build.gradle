@@ -28,15 +28,16 @@ dependencies {
         compile "com.amazonaws:aws-java-sdk-${v}:1.11.676"
     }
     ['column', 'common', 'encoding', 'hadoop', 'jackson'].each { v ->
-        compile "org.apache.parquet:parquet-${v}:1.10.1"
+        compile "org.apache.parquet:parquet-${v}:1.11.0"
     }
+    compile 'org.apache.parquet:parquet-format:2.8.0'
     compile 'org.apache.hadoop:hadoop-common:2.9.2'
     compile 'org.xerial.snappy:snappy-java:1.1.7.3'
 
     testCompile 'org.scalatest:scalatest_2.13:3.0.8'
     testCompile 'org.embulk:embulk-test:0.9.20'
     testCompile 'org.embulk:embulk-standards:0.9.20'
-    testCompile 'org.apache.parquet:parquet-tools:1.10.1'
+    testCompile 'org.apache.parquet:parquet-tools:1.11.0'
     testCompile 'org.apache.hadoop:hadoop-client:2.9.2'
 }
 
