@@ -131,6 +131,8 @@ out:
 ### Run example:
 
 ```shell
+$ ./run_s3_local.sh
+$ ./example/prepare_s3_bucket.sh
 $ ./gradlew classpath
 $ embulk run example/config.yml -Ilib
 ```
@@ -138,8 +140,7 @@ $ embulk run example/config.yml -Ilib
 ### Run test:
 
 ```shell
-## Run fake S3 with localstack
-$ docker run -it --rm -p 4572:4572 -e SERVICES=s3 localstack/localstack
+$ ./run_s3_local.sh
 $ ./gradlew test
 ```
 

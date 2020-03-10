@@ -17,7 +17,8 @@ in:
 
 out:
   type: s3_parquet
-  bucket: my-bucket
+  bucket: example
+  region: us-east-1
   path_prefix: path/to/my-obj-2.
   file_ext: snappy.parquet
   compression_codec: snappy
