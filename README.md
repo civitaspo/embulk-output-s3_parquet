@@ -1,6 +1,6 @@
 # S3 Parquet output plugin for Embulk
 
-![Release CI Status Badge](https://github.com/civitaspo/embulk-output-s3_parquet/workflows/Release%20CI/badge.svg) ![Test CI Status Badge](https://github.com/civitaspo/embulk-output-s3_parquet/workflows/Test%20CI/badge.svg)
+[![Release CI Status Badge](https://github.com/civitaspo/embulk-output-s3_parquet/workflows/Release%20CI/badge.svg)](https://github.com/civitaspo/embulk-output-s3_parquet/actions?query=workflow%3A%22Release+CI%22) [![Test CI Status Badge](https://github.com/civitaspo/embulk-output-s3_parquet/workflows/Test%20CI/badge.svg)](https://github.com/civitaspo/embulk-output-s3_parquet/actions?query=workflow%3A%22Test+CI%22)
 
 [Embulk](https://github.com/embulk/embulk/) output plugin to dump records as [Apache Parquet](https://parquet.apache.org/) files on S3.
 
