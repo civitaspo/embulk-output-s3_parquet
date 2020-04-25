@@ -2,6 +2,7 @@
 ==================
 
 * [Enhancement] [#27](https://github.com/civitaspo/embulk-output-s3_parquet/pull/27) Github Actions releases automatically when a new release tag pushed instead of releasing from local.
+  * [HotFix] [#29](https://github.com/civitaspo/embulk-output-s3_parquet/pull/29) Do not skip the CI when a tag is pushed.
 * [Enhancement] [#28](https://github.com/civitaspo/embulk-output-s3_parquet/pull/28) Apply the "org.embulk.embulk-plugins" Gradle plugin.
 
 0.2.0 (2020-03-10)
