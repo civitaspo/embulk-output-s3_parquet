@@ -133,8 +133,8 @@ out:
 ```shell
 $ ./run_s3_local.sh
 $ ./example/prepare_s3_bucket.sh
-$ ./gradlew classpath
-$ embulk run example/config.yml -Ilib
+$ ./gradlew gem
+$ embulk run example/config.yml -Ibuild/gemContents/lib
 ```
 
 ### Run test:
@@ -147,7 +147,7 @@ $ ./gradlew test
 ### Build
 
 ```
-$ ./gradlew gem  # -t to watch change of files and rebuild continuously
+$ ./gradlew gem --write-locks  # -t to watch change of files and rebuild continuously
 ```
 
 ### Release gem:

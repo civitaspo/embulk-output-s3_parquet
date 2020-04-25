@@ -1,38 +1,52 @@
 plugins {
     id "scala"
-    id "com.jfrog.bintray" version "1.1"
-    id "com.github.jruby-gradle.base" version "1.5.0"
+    id "maven-publish"
     id "com.adarshr.test-logger" version "1.6.0"  // For Pretty test logging
     id "com.diffplug.gradle.spotless" version "3.27.1"
+    id "org.embulk.embulk-plugins" version "0.4.1"
 }
-import com.github.jrubygradle.JRubyExec
+
 repositories {
     mavenCentral()
     jcenter()
 }
-configurations {
-    provided
-}
 
+group = "pro.civitaspo"
 version = "0.2.0"
+description = "Dumps records to S3 Parquet."
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 dependencies {
-    compile  "org.embulk:embulk-core:0.9.23"
-    provided "org.embulk:embulk-core:0.9.23"
+    compileOnly "org.embulk:embulk-core:0.9.23"
+    // NOTE: Is shadow plugin required in the future?
+    compile "org.scala-lang:scala-library:2.13.1"
 
-    compile 'org.scala-lang:scala-library:2.13.1'
     ['glue', 's3', 'sts'].each { v ->
-        compile "com.amazonaws:aws-java-sdk-${v}:1.11.739"
+        compile("com.amazonaws:aws-java-sdk-${v}:1.11.739") {
+            exclude group: 'joda-time', module: 'joda-time'
+            exclude group: 'com.fasterxml.jackson.core', module: 'jackson-annotations'
+            exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
+            exclude group: 'com.fasterxml.jackson.core', module: 'jackson-core'
+        }
     }
     ['column', 'common', 'encoding', 'hadoop', 'jackson'].each { v ->
-        compile "org.apache.parquet:parquet-${v}:1.11.0"
+        compile("org.apache.parquet:parquet-${v}:1.11.0") {
+            exclude group: 'org.slf4j', module: 'slf4j-api'
+        }
     }
     // ref. https://github.com/apache/parquet-mr/blob/apache-parquet-1.11.0/pom.xml#L85
-    compile 'org.apache.parquet:parquet-format:2.7.0'
-    compile 'org.apache.hadoop:hadoop-common:2.9.2'
+    compile('org.apache.parquet:parquet-format:2.7.0') {
+        exclude group: 'org.slf4j', module: 'slf4j-api'
+    }
+    compile('org.apache.hadoop:hadoop-common:2.9.2') {
+        exclude group: 'org.slf4j', module: 'slf4j-api'
+        exclude group: 'com.google.guava', module: 'guava'
+        exclude group: 'commons-beanutils', module: 'commons-beanutils-core'
+        exclude group: 'org.apache.commons', module: 'commons-lang3'
+        exclude group: 'com.fasterxml.jackson.core', module: 'jackson-core'
+    }
     compile 'org.xerial.snappy:snappy-java:1.1.7.3'
 
     ['test', 'standards', 'deps-buffer', 'deps-config'].each { v ->
@@ -53,57 +67,35 @@ spotless {
     }
 }
 
-task classpath(type: Copy, dependsOn: ["jar"]) {
-    doFirst { file("classpath").deleteDir() }
-    from (configurations.runtime - configurations.provided + files(jar.archivePath))
-    into "classpath"
-}
-clean { delete "classpath" }
-
-task gem(type: JRubyExec, dependsOn: ["gemspec", "classpath"]) {
-    jrubyArgs "-S"
-    script "gem"
-    scriptArgs "build", "${project.name}.gemspec"
-    doLast { ant.move(file: "${project.name}-${project.version}.gem", todir: "pkg") }
+embulkPlugin {
+    mainClass = "org.embulk.output.s3_parquet.S3ParquetOutputPlugin"
+    category = "output"
+    type = "s3_parquet"
 }
 
-task gemPush(type: JRubyExec, dependsOn: ["gem"]) {
-    jrubyArgs "-S"
-    script "gem"
-    scriptArgs "push", "pkg/${project.name}-${project.version}.gem"
-}
-
-task "package"(dependsOn: ["gemspec", "classpath"]) {
-    doLast {
-        println "> Build succeeded."
-        println "> You can run embulk with '-L ${file(".").absolutePath}' argument."
+publishing {
+    publications {
+        embulkPluginMaven(MavenPublication) {
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            url = "${project.buildDir}/mavenPublishLocal"
+        }
     }
 }
 
-task gemspec {
-    ext.gemspecFile = file("${project.name}.gemspec")
-    inputs.file "build.gradle"
-    outputs.file gemspecFile
-    doLast { gemspecFile.write($/
-Gem::Specification.new do |spec|
-  spec.name          = "${project.name}"
-  spec.version       = "${project.version}"
-  spec.authors       = ["Civitaspo"]
-  spec.summary       = %[S3 Parquet output plugin for Embulk]
-  spec.description   = %[Dumps records to S3 Parquet.]
-  spec.email         = ["civitaspo@gmail.com"]
-  spec.licenses      = ["MIT"]
-  spec.homepage      = "https://github.com/civitaspo/embulk-output-s3_parquet"
-
-  spec.files         = `git ls-files`.split("\n") + Dir["classpath/*.jar"]
-  spec.test_files    = spec.files.grep(%r"^(test|spec)/")
-  spec.require_paths = ["lib"]
-
-  #spec.add_dependency 'YOUR_GEM_DEPENDENCY', ['~> YOUR_GEM_DEPENDENCY_VERSION']
-  spec.add_development_dependency 'bundler', ['~> 1.0']
-  spec.add_development_dependency 'rake', ['~> 12.0']
-end
-/$)
-    }
+gem {
+    from("LICENSE.txt")
+    authors = ["Civitaspo"]
+    email = [ "civitaspo@gmail.com" ]
+    summary = "S3 Parquet output plugin for Embulk"
+    homepage = "https://github.com/civitaspo/embulk-output-s3_parquet"
+    licenses = ["MIT"]
 }
-clean { delete "${project.name}.gemspec" }
+
+gemPush {
+    host = "https://rubygems.org"
+}
+
