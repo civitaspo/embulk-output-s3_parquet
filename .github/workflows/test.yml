@@ -23,6 +23,6 @@ jobs:
         java-version: 1.8
     - name: scalafmt
       run: ./gradlew spotlessCheck
-    - name: Test with Gradle
-      run: ./gradlew test
+    - name: scalatest
+      run: ./gradlew scalatest
 
