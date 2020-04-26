@@ -1,7 +1,6 @@
 plugins {
     id "scala"
     id "maven-publish"
-    id "com.adarshr.test-logger" version "1.6.0"  // For Pretty test logging
     id "com.diffplug.gradle.spotless" version "3.27.1"
     id "org.embulk.embulk-plugins" version "0.4.1"
 }
@@ -52,13 +51,9 @@ dependencies {
     ['test', 'standards', 'deps-buffer', 'deps-config'].each { v ->
         testImplementation "org.embulk:embulk-${v}:0.9.23"
     }
-    testImplementation 'org.scalatest:scalatest_2.13:3.0.8'
+    testImplementation "org.scalatest:scalatest_2.13:3.1.1"
     testImplementation 'org.apache.parquet:parquet-tools:1.11.0'
     testImplementation 'org.apache.hadoop:hadoop-client:2.9.2'
-}
-
-testlogger {
-    theme "mocha"
 }
 
 spotless {
@@ -99,3 +94,8 @@ gemPush {
     host = "https://rubygems.org"
 }
 
+task scalatest(dependsOn: ['testClasses'], type: JavaExec) {
+    main = 'org.scalatest.tools.Runner'
+    args = ['-R', 'build/classes/scala/test', '-o']
+    classpath = sourceSets.test.runtimeClasspath
+}
