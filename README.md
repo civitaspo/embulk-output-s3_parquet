@@ -141,7 +141,7 @@ $ embulk run example/config.yml -Ibuild/gemContents/lib
 
 ```shell
 $ ./run_s3_local.sh
-$ ./gradlew test
+$ ./gradlew scalatest
 ```
 
 ### Build
