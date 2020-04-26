@@ -63,7 +63,10 @@ class TestS3ParquetOutputPlugin
     embulk
       .newConfig()
       .set("type", "s3_parquet")
-      .set("endpoint", "http://localhost:4572") // See https://github.com/localstack/localstack#overview
+      .set(
+        "endpoint",
+        "http://localhost:4572"
+      ) // See https://github.com/localstack/localstack#overview
       .set("bucket", TEST_BUCKET_NAME)
       .set("path_prefix", "path/to/p")
       .set("auth_method", "basic")
