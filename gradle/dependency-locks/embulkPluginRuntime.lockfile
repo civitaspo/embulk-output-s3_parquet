@@ -2,12 +2,12 @@
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
 asm:asm:3.1
-com.amazonaws:aws-java-sdk-core:1.11.739
-com.amazonaws:aws-java-sdk-glue:1.11.739
-com.amazonaws:aws-java-sdk-kms:1.11.739
-com.amazonaws:aws-java-sdk-s3:1.11.739
-com.amazonaws:aws-java-sdk-sts:1.11.739
-com.amazonaws:jmespath-java:1.11.739
+com.amazonaws:aws-java-sdk-core:1.11.769
+com.amazonaws:aws-java-sdk-glue:1.11.769
+com.amazonaws:aws-java-sdk-kms:1.11.769
+com.amazonaws:aws-java-sdk-s3:1.11.769
+com.amazonaws:aws-java-sdk-sts:1.11.769
+com.amazonaws:jmespath-java:1.11.769
 com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.6.7
 com.fasterxml.woodstox:woodstox-core:5.0.3
 com.github.stephenc.jcip:jcip-annotations:1.0-1
