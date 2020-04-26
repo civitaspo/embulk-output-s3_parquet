@@ -23,7 +23,7 @@ dependencies {
     compile "org.scala-lang:scala-library:2.13.1"
 
     ['glue', 's3', 'sts'].each { v ->
-        compile("com.amazonaws:aws-java-sdk-${v}:1.11.739") {
+        compile("com.amazonaws:aws-java-sdk-${v}:1.11.769") {
             exclude group: 'joda-time', module: 'joda-time'
             exclude group: 'com.fasterxml.jackson.core', module: 'jackson-annotations'
             exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
