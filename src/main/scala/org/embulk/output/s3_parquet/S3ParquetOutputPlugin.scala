@@ -216,7 +216,8 @@ class S3ParquetOutputPlugin extends OutputPlugin {
     // column_options
     task.getColumnOptions.forEach { (k: String, opt: ColumnOptionTask) =>
       val c = schema.lookupColumn(k)
-      val useTimestampOption = opt.getFormat.isPresent || opt.getTimeZoneId.isPresent
+      val useTimestampOption =
+        opt.getFormat.isPresent || opt.getTimeZoneId.isPresent
       if (!c.getType.getName.equals("timestamp") && useTimestampOption) {
         throw new ConfigException(s"column:$k is not 'timestamp' type.")
       }
