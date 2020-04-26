@@ -6,6 +6,7 @@ import java.nio.file.FileSystems
 import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
+import com.amazonaws.services.s3.model.ObjectListing
 import com.amazonaws.services.s3.transfer.TransferManagerBuilder
 import com.google.common.io.Resources
 import org.apache.hadoop.fs.{Path => HadoopPath}
@@ -14,25 +15,17 @@ import org.apache.parquet.tools.read.{SimpleReadSupport, SimpleRecord}
 import org.embulk.config.ConfigSource
 import org.embulk.spi.OutputPlugin
 import org.embulk.test.{EmbulkTests, TestingEmbulk}
-import org.junit.Rule
-import org.junit.runner.RunWith
-import org.scalatest.{
-  BeforeAndAfter,
-  BeforeAndAfterAll,
-  DiagrammedAssertions,
-  FunSuite
-}
-import org.scalatestplus.junit.JUnitRunner
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
+import org.scalatest.diagrams.Diagrams
+import org.scalatest.funsuite.AnyFunSuite
 
-import scala.annotation.meta.getter
 import scala.jdk.CollectionConverters._
 
-@RunWith(classOf[JUnitRunner])
 class TestS3ParquetOutputPlugin
-    extends FunSuite
+    extends AnyFunSuite
     with BeforeAndAfter
     with BeforeAndAfterAll
-    with DiagrammedAssertions {
+    with Diagrams {
 
   val RESOURCE_NAME_PREFIX: String = "org/embulk/output/s3_parquet/"
   val TEST_S3_ENDPOINT: String = "http://localhost:4572"
@@ -41,7 +34,6 @@ class TestS3ParquetOutputPlugin
   val TEST_S3_SECRET_ACCESS_KEY: String = "test"
   val TEST_BUCKET_NAME: String = "my-bucket"
 
-  @(Rule @getter)
   val embulk: TestingEmbulk = TestingEmbulk
     .builder()
     .registerPlugin(
@@ -56,6 +48,17 @@ class TestS3ParquetOutputPlugin
   }
 
   after {
+    withLocalStackS3Client { cli =>
+      @scala.annotation.tailrec
+      def rmRecursive(listing: ObjectListing): Unit = {
+        listing.getObjectSummaries.asScala.foreach(o =>
+          cli.deleteObject(TEST_BUCKET_NAME, o.getKey)
+        )
+        if (listing.isTruncated)
+          rmRecursive(cli.listNextBatchOfObjects(listing))
+      }
+      rmRecursive(cli.listObjects(TEST_BUCKET_NAME))
+    }
     withLocalStackS3Client(_.deleteBucket(TEST_BUCKET_NAME))
   }
 
