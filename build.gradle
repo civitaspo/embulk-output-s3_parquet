@@ -11,7 +11,7 @@ repositories {
 }
 
 group = "pro.civitaspo"
-version = "0.3.0"
+version = "0.4.0"
 description = "Dumps records to S3 Parquet."
 
 sourceCompatibility = 1.8
