@@ -1,3 +1,9 @@
+0.4.0 (2020-04-28)
+==================
+
+* [Enhancement] [#35](https://github.com/civitaspo/embulk-output-s3_parquet/pull/35) Fix deprecation warnings.
+
+
 0.3.0 (2020-04-26)
 ==================
 
