@@ -23,31 +23,13 @@ object EmbulkMessageType {
         LogicalTypeHandlerStore.empty
   ) {
 
-    def withName(name: String): Builder = {
-      Builder(
-        name = name,
-        schema = schema,
-        logicalTypeHandlers = logicalTypeHandlers
-      )
-    }
+    def withName(name: String): Builder = copy(name = name)
 
-    def withSchema(schema: Schema): Builder = {
-      Builder(
-        name = name,
-        schema = schema,
-        logicalTypeHandlers = logicalTypeHandlers
-      )
-    }
+    def withSchema(schema: Schema): Builder = copy(schema = schema)
 
     def withLogicalTypeHandlers(
         logicalTypeHandlers: LogicalTypeHandlerStore
-    ): Builder = {
-      Builder(
-        name = name,
-        schema = schema,
-        logicalTypeHandlers = logicalTypeHandlers
-      )
-    }
+    ): Builder = copy(logicalTypeHandlers = logicalTypeHandlers)
 
     def build(): MessageType = {
       val builder: ImmutableList.Builder[Type] = ImmutableList.builder[Type]()
