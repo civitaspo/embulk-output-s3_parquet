@@ -2,10 +2,10 @@ package org.embulk.output.s3_parquet.parquet
 
 import com.google.common.collect.ImmutableList
 import org.apache.parquet.schema.{
+  LogicalTypeAnnotation,
   MessageType,
-  OriginalType,
-  PrimitiveType,
-  Type
+  Type,
+  Types
 }
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName
 import org.embulk.spi.{Column, ColumnVisitor, Schema}
@@ -23,31 +23,13 @@ object EmbulkMessageType {
         LogicalTypeHandlerStore.empty
   ) {
 
-    def withName(name: String): Builder = {
-      Builder(
-        name = name,
-        schema = schema,
-        logicalTypeHandlers = logicalTypeHandlers
-      )
-    }
+    def withName(name: String): Builder = copy(name = name)
 
-    def withSchema(schema: Schema): Builder = {
-      Builder(
-        name = name,
-        schema = schema,
-        logicalTypeHandlers = logicalTypeHandlers
-      )
-    }
+    def withSchema(schema: Schema): Builder = copy(schema = schema)
 
     def withLogicalTypeHandlers(
         logicalTypeHandlers: LogicalTypeHandlerStore
-    ): Builder = {
-      Builder(
-        name = name,
-        schema = schema,
-        logicalTypeHandlers = logicalTypeHandlers
-      )
-    }
+    ): Builder = copy(logicalTypeHandlers = logicalTypeHandlers)
 
     def build(): MessageType = {
       val builder: ImmutableList.Builder[Type] = ImmutableList.builder[Type]()
@@ -67,11 +49,7 @@ object EmbulkMessageType {
 
     override def booleanColumn(column: Column): Unit = {
       builder.add(
-        new PrimitiveType(
-          Type.Repetition.OPTIONAL,
-          PrimitiveTypeName.BOOLEAN,
-          column.getName
-        )
+        Types.optional(PrimitiveTypeName.BOOLEAN).named(column.getName)
       )
     }
 
@@ -82,11 +60,7 @@ object EmbulkMessageType {
       val t = logicalTypeHandlers.get(name, et) match {
         case Some(h) if h.isConvertible(et) => h.newSchemaFieldType(name)
         case _ =>
-          new PrimitiveType(
-            Type.Repetition.OPTIONAL,
-            PrimitiveTypeName.INT64,
-            column.getName
-          )
+          Types.optional(PrimitiveTypeName.INT64).named(column.getName)
       }
 
       builder.add(t)
@@ -94,22 +68,16 @@ object EmbulkMessageType {
 
     override def doubleColumn(column: Column): Unit = {
       builder.add(
-        new PrimitiveType(
-          Type.Repetition.OPTIONAL,
-          PrimitiveTypeName.DOUBLE,
-          column.getName
-        )
+        Types.optional(PrimitiveTypeName.DOUBLE).named(column.getName)
       )
     }
 
     override def stringColumn(column: Column): Unit = {
       builder.add(
-        new PrimitiveType(
-          Type.Repetition.OPTIONAL,
-          PrimitiveTypeName.BINARY,
-          column.getName,
-          OriginalType.UTF8
-        )
+        Types
+          .optional(PrimitiveTypeName.BINARY)
+          .as(LogicalTypeAnnotation.stringType())
+          .named(column.getName)
       )
     }
 
@@ -120,12 +88,10 @@ object EmbulkMessageType {
       val t = logicalTypeHandlers.get(name, et) match {
         case Some(h) if h.isConvertible(et) => h.newSchemaFieldType(name)
         case _ =>
-          new PrimitiveType(
-            Type.Repetition.OPTIONAL,
-            PrimitiveTypeName.BINARY,
-            name,
-            OriginalType.UTF8
-          )
+          Types
+            .optional(PrimitiveTypeName.BINARY)
+            .as(LogicalTypeAnnotation.stringType())
+            .named(name)
       }
 
       builder.add(t)
@@ -138,12 +104,10 @@ object EmbulkMessageType {
       val t = logicalTypeHandlers.get(name, et) match {
         case Some(h) if h.isConvertible(et) => h.newSchemaFieldType(name)
         case _ =>
-          new PrimitiveType(
-            Type.Repetition.OPTIONAL,
-            PrimitiveTypeName.BINARY,
-            name,
-            OriginalType.UTF8
-          )
+          Types
+            .optional(PrimitiveTypeName.BINARY)
+            .as(LogicalTypeAnnotation.stringType())
+            .named(name)
       }
 
       builder.add(t)

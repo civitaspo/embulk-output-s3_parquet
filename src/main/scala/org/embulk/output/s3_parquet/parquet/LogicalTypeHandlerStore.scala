@@ -1,6 +1,5 @@
 package org.embulk.output.s3_parquet.parquet
 
-import org.embulk.spi.`type`.{Type, Types}
 import java.util.{Map => JMap}
 
 import org.embulk.config.ConfigException
@@ -8,6 +7,7 @@ import org.embulk.output.s3_parquet.S3ParquetOutputPlugin.{
   ColumnOptionTask,
   TypeOptionTask
 }
+import org.embulk.spi.`type`.{Type, Types}
 
 import scala.jdk.CollectionConverters._
 
@@ -24,14 +24,7 @@ case class LogicalTypeHandlerStore private (
 
   // Try column name lookup, then column type
   def get(n: String, t: Type): Option[LogicalTypeHandler] = {
-    get(n) match {
-      case Some(h) => Some(h)
-      case _ =>
-        get(t) match {
-          case Some(h) => Some(h)
-          case _       => None
-        }
-    }
+    get(n).orElse(get(t))
   }
 
   def get(t: Type): Option[LogicalTypeHandler] = {
@@ -84,12 +77,12 @@ object LogicalTypeHandlerStore {
       .filter(_._2.getLogicalType.isPresent)
       .map[Type, LogicalTypeHandler] {
         case (k, v) =>
-          val t = STRING_TO_EMBULK_TYPE.get(k)
-          val h = STRING_TO_LOGICAL_TYPE.get(v.getLogicalType.get)
-          (t, h) match {
-            case (Some(tt), Some(hh)) => (tt, hh)
-            case _ =>
-              throw new ConfigException("invalid logical types in type_options")
+          {
+            for (t <- STRING_TO_EMBULK_TYPE.get(k);
+                 h <- STRING_TO_LOGICAL_TYPE.get(v.getLogicalType.get))
+              yield (t, h)
+          }.getOrElse {
+            throw new ConfigException("invalid logical types in type_options")
           }
       }
       .toMap
@@ -98,13 +91,13 @@ object LogicalTypeHandlerStore {
       .filter(_._2.getLogicalType.isPresent)
       .map[String, LogicalTypeHandler] {
         case (k, v) =>
-          val h = STRING_TO_LOGICAL_TYPE.get(v.getLogicalType.get)
-          h match {
-            case Some(hh) => (k, hh)
-            case _ =>
-              throw new ConfigException(
-                "invalid logical types in column_options"
-              )
+          {
+            for (h <- STRING_TO_LOGICAL_TYPE.get(v.getLogicalType.get))
+              yield (k, h)
+          }.getOrElse {
+            throw new ConfigException(
+              "invalid logical types in column_options"
+            )
           }
       }
       .toMap
