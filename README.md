@@ -164,4 +164,4 @@ $ ./gradlew gemPush
 
 ## Contributors
 
-- @syucream
+- [@syucream](https://github.com/syucream)
