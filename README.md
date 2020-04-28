@@ -123,7 +123,7 @@ out:
 
 ## Note
 
-* The current Parquet [LogicalTypes](https://github.com/apache/parquet-format/blob/2b38663/LogicalTypes.md) implementation does only old representation.
+* The current Parquet [LogicalTypes](https://github.com/apache/parquet-format/blob/apache-parquet-format-2.8.0/LogicalTypes.md) implementation does only old representation.
 * Some kind of LogicalTypes are sometimes not supported on your middleware. Be careful to giving logical type name.
 
 ## Development
