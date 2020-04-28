@@ -9,12 +9,13 @@ import org.embulk.output.s3_parquet.S3ParquetOutputPlugin.{
   TypeOptionTask
 }
 import org.embulk.spi.`type`.{Types, Type => EType}
+import org.scalatest.diagrams.Diagrams
 import org.scalatest.funsuite.AnyFunSuite
 
 import scala.jdk.CollectionConverters._
 import scala.util.Try
 
-class TestLogicalTypeHandlerStore extends AnyFunSuite {
+class TestLogicalTypeHandlerStore extends AnyFunSuite with Diagrams {
   test("empty() returns empty maps") {
     val rv = LogicalTypeHandlerStore.empty
 
