@@ -5,6 +5,8 @@ import org.embulk.spi.`type`.Types
 import org.embulk.spi.time.{Timestamp, TimestampFormatter, TimestampParser}
 import org.msgpack.value.Value
 
+import scala.util.chaining._
+
 class TestS3ParquetOutputPlugin extends EmbulkPluginTestHelper {
 
   test("minimal default case") {
@@ -52,6 +54,60 @@ class TestS3ParquetOutputPlugin extends EmbulkPluginTestHelper {
               s"A different value is found (Record Index: $i, Column Index: $j)"
             )
         }
+      }
+    }
+  }
+
+  test("timestamp-millis") {
+    val schema = Schema.builder().add("c0", Types.TIMESTAMP).build()
+    val data: Seq[Seq[Timestamp]] = Seq(
+      Seq(Timestamp.ofEpochMilli(111_111_111L)),
+      Seq(Timestamp.ofEpochMilli(222_222_222L)),
+      Seq(Timestamp.ofEpochMilli(333_333_333L))
+    )
+    val cfg = newDefaultConfig.merge(
+      loadConfigSourceFromYamlString("""
+                                       |type_options:
+                                       |  timestamp:
+                                       |    logical_type: "timestamp-millis"
+                                       |""".stripMargin)
+    )
+
+    runOutput(newDefaultConfig, schema, data)
+    val result: Seq[Seq[AnyRef]] = runOutput(cfg, schema, data)
+
+    assert(data.size == result.size)
+    data.indices.foreach { i =>
+      assert {
+        data(i).head.toEpochMilli == result(i).head.asInstanceOf[Long]
+      }
+    }
+  }
+
+  test("timestamp-micros") {
+    val schema = Schema.builder().add("c0", Types.TIMESTAMP).build()
+    val data: Seq[Seq[Timestamp]] = Seq(
+      Seq(Timestamp.ofEpochSecond(111_111_111L, 111_111_000L)),
+      Seq(Timestamp.ofEpochSecond(222_222_222L, 222_222_222L)),
+      Seq(Timestamp.ofEpochSecond(333_333_333L, 333_000L))
+    )
+    val cfg = newDefaultConfig.merge(
+      loadConfigSourceFromYamlString("""
+                                       |type_options:
+                                       |  timestamp:
+                                       |    logical_type: "timestamp-micros"
+                                       |""".stripMargin)
+    )
+
+    runOutput(newDefaultConfig, schema, data)
+    val result: Seq[Seq[AnyRef]] = runOutput(cfg, schema, data)
+
+    assert(data.size == result.size)
+    data.indices.foreach { i =>
+      assert {
+        data(i).head.pipe(ts =>
+          (ts.getEpochSecond * 1_000_000L) + (ts.getNano / 1_000L)
+        ) == result(i).head.asInstanceOf[Long]
       }
     }
   }
