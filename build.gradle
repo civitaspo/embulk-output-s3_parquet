@@ -48,9 +48,10 @@ dependencies {
     }
     compile 'org.xerial.snappy:snappy-java:1.1.7.3'
 
-    ['test', 'standards', 'deps-buffer', 'deps-config'].each { v ->
+    ['core', 'standards', 'deps-buffer', 'deps-config'].each { v ->
         testImplementation "org.embulk:embulk-${v}:0.9.23"
     }
+    testImplementation "org.embulk:embulk-core:0.9.23:tests"
     testImplementation "org.scalatest:scalatest_2.13:3.1.1"
     testImplementation 'org.apache.parquet:parquet-tools:1.11.0'
     testImplementation 'org.apache.hadoop:hadoop-client:2.9.2'
