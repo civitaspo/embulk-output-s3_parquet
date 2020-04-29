@@ -73,7 +73,6 @@ class TestS3ParquetOutputPlugin extends EmbulkPluginTestHelper {
                                        |""".stripMargin)
     )
 
-    runOutput(newDefaultConfig, schema, data)
     val result: Seq[Seq[AnyRef]] = runOutput(cfg, schema, data)
 
     assert(data.size == result.size)
@@ -99,7 +98,6 @@ class TestS3ParquetOutputPlugin extends EmbulkPluginTestHelper {
                                        |""".stripMargin)
     )
 
-    runOutput(newDefaultConfig, schema, data)
     val result: Seq[Seq[AnyRef]] = runOutput(cfg, schema, data)
 
     assert(data.size == result.size)
