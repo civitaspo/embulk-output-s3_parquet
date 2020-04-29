@@ -1,187 +1,114 @@
 package org.embulk.output.s3_parquet
 
-import java.io.File
-import java.nio.file.FileSystems
+import org.embulk.spi.Schema
+import org.embulk.spi.`type`.Types
+import org.embulk.spi.time.{Timestamp, TimestampFormatter, TimestampParser}
+import org.msgpack.value.Value
 
-import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
-import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
-import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
-import com.amazonaws.services.s3.model.ObjectListing
-import com.amazonaws.services.s3.transfer.TransferManagerBuilder
-import com.google.common.io.Resources
-import org.apache.hadoop.fs.{Path => HadoopPath}
-import org.apache.parquet.hadoop.ParquetReader
-import org.apache.parquet.tools.read.{SimpleReadSupport, SimpleRecord}
-import org.embulk.config.ConfigSource
-import org.embulk.spi.OutputPlugin
-import org.embulk.test.{EmbulkTests, TestingEmbulk}
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
-import org.scalatest.diagrams.Diagrams
-import org.scalatest.funsuite.AnyFunSuite
+import scala.util.chaining._
 
-import scala.jdk.CollectionConverters._
+class TestS3ParquetOutputPlugin extends EmbulkPluginTestHelper {
 
-class TestS3ParquetOutputPlugin
-    extends AnyFunSuite
-    with BeforeAndAfter
-    with BeforeAndAfterAll
-    with Diagrams {
-
-  val RESOURCE_NAME_PREFIX: String = "org/embulk/output/s3_parquet/"
-  val TEST_S3_ENDPOINT: String = "http://localhost:4572"
-  val TEST_S3_REGION: String = "us-east-1"
-  val TEST_S3_ACCESS_KEY_ID: String = "test"
-  val TEST_S3_SECRET_ACCESS_KEY: String = "test"
-  val TEST_BUCKET_NAME: String = "my-bucket"
-
-  val embulk: TestingEmbulk = TestingEmbulk
-    .builder()
-    .registerPlugin(
-      classOf[OutputPlugin],
-      "s3_parquet",
-      classOf[S3ParquetOutputPlugin]
+  test("minimal default case") {
+    val schema: Schema = Schema
+      .builder()
+      .add("c0", Types.BOOLEAN)
+      .add("c1", Types.LONG)
+      .add("c2", Types.DOUBLE)
+      .add("c3", Types.STRING)
+      .add("c4", Types.TIMESTAMP)
+      .add("c5", Types.JSON)
+      .build()
+    // scalafmt: { maxColumn = 200 }
+    val parser = TimestampParser.of("%Y-%m-%d %H:%M:%S.%N %z", "UTC")
+    val data: Seq[Seq[Any]] = Seq(
+      Seq(true, 0L, 0.0d, "c212c89f91", parser.parse("2017-10-22 19:53:31.000000 +0900"), newJson(Map("a" -> 0, "b" -> "00"))),
+      Seq(false, 1L, -0.5d, "aaaaa", parser.parse("2017-10-22 19:53:31.000000 +0900"), newJson(Map("a" -> 1, "b" -> "11"))),
+      Seq(false, 2L, 1.5d, "90823c6a1f", parser.parse("2017-10-23 23:42:43.000000 +0900"), newJson(Map("a" -> 2, "b" -> "22"))),
+      Seq(true, 3L, 0.44d, "", parser.parse("2017-10-22 06:12:13.000000 +0900"), newJson(Map("a" -> 3, "b" -> "33", "c" -> 3.3))),
+      Seq(false, 9999L, 10000.33333d, "e56a40571c", parser.parse("2017-10-23 04:59:16.000000 +0900"), newJson(Map("a" -> 4, "b" -> "44", "c" -> 4.4, "d" -> true)))
     )
-    .build()
+    // scalafmt: { maxColumn = 80 }
 
-  before {
-    withLocalStackS3Client(_.createBucket(TEST_BUCKET_NAME))
-  }
+    val result: Seq[Seq[AnyRef]] = runOutput(newDefaultConfig, schema, data)
 
-  after {
-    withLocalStackS3Client { cli =>
-      @scala.annotation.tailrec
-      def rmRecursive(listing: ObjectListing): Unit = {
-        listing.getObjectSummaries.asScala.foreach(o =>
-          cli.deleteObject(TEST_BUCKET_NAME, o.getKey)
-        )
-        if (listing.isTruncated)
-          rmRecursive(cli.listNextBatchOfObjects(listing))
+    assert(result.size == 5)
+    data.indices.foreach { i =>
+      data(i).indices.foreach { j =>
+        data(i)(j) match {
+          case timestamp: Timestamp =>
+            val formatter =
+              TimestampFormatter.of("%Y-%m-%d %H:%M:%S.%6N %z", "Asia/Tokyo")
+            assert(
+              formatter.format(timestamp) == result(i)(j),
+              s"A different timestamp value is found (Record Index: $i, Column Index: $j)"
+            )
+          case value: Value =>
+            assert(
+              value.toJson == result(i)(j),
+              s"A different json value is found (Record Index: $i, Column Index: $j)"
+            )
+          case _ =>
+            assert(
+              data(i)(j) == result(i)(j),
+              s"A different value is found (Record Index: $i, Column Index: $j)"
+            )
+        }
       }
-      rmRecursive(cli.listObjects(TEST_BUCKET_NAME))
-    }
-    withLocalStackS3Client(_.deleteBucket(TEST_BUCKET_NAME))
-  }
-
-  def defaultOutConfig(): ConfigSource = {
-    embulk
-      .newConfig()
-      .set("type", "s3_parquet")
-      .set(
-        "endpoint",
-        "http://localhost:4572"
-      ) // See https://github.com/localstack/localstack#overview
-      .set("bucket", TEST_BUCKET_NAME)
-      .set("path_prefix", "path/to/p")
-      .set("auth_method", "basic")
-      .set("access_key_id", TEST_S3_ACCESS_KEY_ID)
-      .set("secret_access_key", TEST_S3_SECRET_ACCESS_KEY)
-      .set("path_style_access_enabled", true)
-      .set("default_timezone", "Asia/Tokyo")
-  }
-
-  test("first test") {
-    val inPath = toPath("in1.csv")
-    val outConfig = defaultOutConfig()
-
-    val result: TestingEmbulk.RunResult = embulk.runOutput(outConfig, inPath)
-
-    val outRecords: Seq[Map[String, String]] =
-      result.getOutputTaskReports.asScala
-        .map { tr =>
-          val b = tr.get(classOf[String], "bucket")
-          val k = tr.get(classOf[String], "key")
-          readParquetFile(b, k)
-        }
-        .foldLeft(Seq[Map[String, String]]()) { (merged, records) =>
-          merged ++ records
-        }
-
-    val inRecords: Seq[Seq[String]] = EmbulkTests
-      .readResource(RESOURCE_NAME_PREFIX + "out1.tsv")
-      .stripLineEnd
-      .split("\n")
-      .map(record => record.split("\t").toSeq)
-      .toSeq
-
-    inRecords.zipWithIndex.foreach {
-      case (record, recordIndex) =>
-        0.to(5).foreach { columnIndex =>
-          val columnName = s"c$columnIndex"
-          val inData: String = inRecords(recordIndex)(columnIndex)
-          val outData: String =
-            outRecords(recordIndex).getOrElse(columnName, "")
-
-          assert(
-            outData === inData,
-            s"record: $recordIndex, column: $columnName"
-          )
-        }
     }
   }
 
-  def readParquetFile(bucket: String, key: String): Seq[Map[String, String]] = {
-    val createdParquetFile = embulk.createTempFile("in")
-    withLocalStackS3Client { s3 =>
-      val xfer = TransferManagerBuilder
-        .standard()
-        .withS3Client(s3)
-        .build()
-      try xfer
-        .download(bucket, key, createdParquetFile.toFile)
-        .waitForCompletion()
-      finally xfer.shutdownNow()
-    }
+  test("timestamp-millis") {
+    val schema = Schema.builder().add("c0", Types.TIMESTAMP).build()
+    val data: Seq[Seq[Timestamp]] = Seq(
+      Seq(Timestamp.ofEpochMilli(111_111_111L)),
+      Seq(Timestamp.ofEpochMilli(222_222_222L)),
+      Seq(Timestamp.ofEpochMilli(333_333_333L))
+    )
+    val cfg = newDefaultConfig.merge(
+      loadConfigSourceFromYamlString("""
+                                       |type_options:
+                                       |  timestamp:
+                                       |    logical_type: "timestamp-millis"
+                                       |""".stripMargin)
+    )
 
-    val reader: ParquetReader[SimpleRecord] = ParquetReader
-      .builder(
-        new SimpleReadSupport(),
-        new HadoopPath(createdParquetFile.toString)
-      )
-      .build()
+    runOutput(newDefaultConfig, schema, data)
+    val result: Seq[Seq[AnyRef]] = runOutput(cfg, schema, data)
 
-    def read(
-        reader: ParquetReader[SimpleRecord],
-        records: Seq[Map[String, String]] = Seq()
-    ): Seq[Map[String, String]] = {
-      val simpleRecord: SimpleRecord = reader.read()
-      if (simpleRecord != null) {
-        val r: Map[String, String] = simpleRecord.getValues.asScala
-          .map(v => v.getName -> v.getValue.toString)
-          .toMap
-        return read(reader, records :+ r)
+    assert(data.size == result.size)
+    data.indices.foreach { i =>
+      assert {
+        data(i).head.toEpochMilli == result(i).head.asInstanceOf[Long]
       }
-      records
-    }
-
-    try read(reader)
-    finally {
-      reader.close()
-
     }
   }
 
-  private def toPath(fileName: String) = {
-    val url = Resources.getResource(RESOURCE_NAME_PREFIX + fileName)
-    FileSystems.getDefault.getPath(new File(url.toURI).getAbsolutePath)
-  }
+  test("timestamp-micros") {
+    val schema = Schema.builder().add("c0", Types.TIMESTAMP).build()
+    val data: Seq[Seq[Timestamp]] = Seq(
+      Seq(Timestamp.ofEpochSecond(111_111_111L, 111_111_000L)),
+      Seq(Timestamp.ofEpochSecond(222_222_222L, 222_222_222L)),
+      Seq(Timestamp.ofEpochSecond(333_333_333L, 333_000L))
+    )
+    val cfg = newDefaultConfig.merge(
+      loadConfigSourceFromYamlString("""
+                                       |type_options:
+                                       |  timestamp:
+                                       |    logical_type: "timestamp-micros"
+                                       |""".stripMargin)
+    )
 
-  private def withLocalStackS3Client[A](f: AmazonS3 => A): A = {
-    val client: AmazonS3 = AmazonS3ClientBuilder.standard
-      .withEndpointConfiguration(
-        new EndpointConfiguration(TEST_S3_ENDPOINT, TEST_S3_REGION)
-      )
-      .withCredentials(
-        new AWSStaticCredentialsProvider(
-          new BasicAWSCredentials(
-            TEST_S3_ACCESS_KEY_ID,
-            TEST_S3_SECRET_ACCESS_KEY
-          )
-        )
-      )
-      .withPathStyleAccessEnabled(true)
-      .build()
+    runOutput(newDefaultConfig, schema, data)
+    val result: Seq[Seq[AnyRef]] = runOutput(cfg, schema, data)
 
-    try f(client)
-    finally client.shutdown()
+    assert(data.size == result.size)
+    data.indices.foreach { i =>
+      assert {
+        data(i).head.pipe(ts =>
+          (ts.getEpochSecond * 1_000_000L) + (ts.getNano / 1_000L)
+        ) == result(i).head.asInstanceOf[Long]
+      }
+    }
   }
 }

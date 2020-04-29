@@ -2,11 +2,12 @@ package org.embulk.output.s3_parquet.parquet
 
 import org.embulk.spi.DataException
 import org.embulk.spi.`type`.Types
+import org.scalatest.diagrams.Diagrams
 import org.scalatest.funsuite.AnyFunSuite
 
 import scala.util.Try
 
-class TestLogicalTypeHandler extends AnyFunSuite {
+class TestLogicalTypeHandler extends AnyFunSuite with Diagrams {
 
   test("IntLogicalTypeHandler.isConvertible() returns true for long") {
     val h = Int8LogicalTypeHandler
