@@ -1,5 +1,8 @@
 package org.embulk.output.s3_parquet
 
+import org.apache.parquet.column.ColumnDescriptor
+import org.apache.parquet.schema.LogicalTypeAnnotation
+import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName
 import org.embulk.spi.Schema
 import org.embulk.spi.`type`.Types
 import org.embulk.spi.time.{Timestamp, TimestampFormatter, TimestampParser}
@@ -30,7 +33,87 @@ class TestS3ParquetOutputPlugin extends EmbulkPluginTestHelper {
     )
     // scalafmt: { maxColumn = 80 }
 
-    val result: Seq[Seq[AnyRef]] = runOutput(newDefaultConfig, schema, data)
+    val result: Seq[Seq[AnyRef]] =
+      runOutput(
+        newDefaultConfig,
+        schema,
+        data,
+        messageTypeTest = { messageType =>
+          assert(
+            PrimitiveTypeName.BOOLEAN == messageType.getColumns
+              .get(0)
+              .getPrimitiveType
+              .getPrimitiveTypeName
+          )
+          assert(
+            PrimitiveTypeName.INT64 == messageType.getColumns
+              .get(1)
+              .getPrimitiveType
+              .getPrimitiveTypeName
+          )
+          assert(
+            PrimitiveTypeName.DOUBLE == messageType.getColumns
+              .get(2)
+              .getPrimitiveType
+              .getPrimitiveTypeName
+          )
+          assert(
+            PrimitiveTypeName.BINARY == messageType.getColumns
+              .get(3)
+              .getPrimitiveType
+              .getPrimitiveTypeName
+          )
+          assert(
+            PrimitiveTypeName.BINARY == messageType.getColumns
+              .get(4)
+              .getPrimitiveType
+              .getPrimitiveTypeName
+          )
+          assert(
+            PrimitiveTypeName.BINARY == messageType.getColumns
+              .get(5)
+              .getPrimitiveType
+              .getPrimitiveTypeName
+          )
+
+          assert(
+            null == messageType.getColumns
+              .get(0)
+              .getPrimitiveType
+              .getLogicalTypeAnnotation
+          )
+          assert(
+            null == messageType.getColumns
+              .get(1)
+              .getPrimitiveType
+              .getLogicalTypeAnnotation
+          )
+          assert(
+            null == messageType.getColumns
+              .get(2)
+              .getPrimitiveType
+              .getLogicalTypeAnnotation
+          )
+          assert(
+            LogicalTypeAnnotation.stringType() == messageType.getColumns
+              .get(3)
+              .getPrimitiveType
+              .getLogicalTypeAnnotation
+          )
+          assert(
+            LogicalTypeAnnotation.stringType() == messageType.getColumns
+              .get(4)
+              .getPrimitiveType
+              .getLogicalTypeAnnotation
+          )
+          assert(
+            LogicalTypeAnnotation.stringType() == messageType.getColumns
+              .get(5)
+              .getPrimitiveType
+              .getLogicalTypeAnnotation
+          )
+        }
+      )
 
     assert(result.size == 5)
     data.indices.foreach { i =>
@@ -73,7 +156,28 @@ class TestS3ParquetOutputPlugin extends EmbulkPluginTestHelper {
                                        |""".stripMargin)
     )
 
-    val result: Seq[Seq[AnyRef]] = runOutput(cfg, schema, data)
+    val result: Seq[Seq[AnyRef]] = runOutput(
+      cfg,
+      schema,
+      data,
+      messageTypeTest = { messageType =>
+        assert(
+          PrimitiveTypeName.INT64 == messageType.getColumns
+            .get(0)
+            .getPrimitiveType
+            .getPrimitiveTypeName
+        )
+        assert(
+          LogicalTypeAnnotation.timestampType(
+            true,
+            LogicalTypeAnnotation.TimeUnit.MILLIS
+          ) == messageType.getColumns
+            .get(0)
+            .getPrimitiveType
+            .getLogicalTypeAnnotation
+        )
+      }
+    )
 
     assert(data.size == result.size)
     data.indices.foreach { i =>
@@ -98,7 +202,28 @@ class TestS3ParquetOutputPlugin extends EmbulkPluginTestHelper {
                                        |""".stripMargin)
     )
 
-    val result: Seq[Seq[AnyRef]] = runOutput(cfg, schema, data)
+    val result: Seq[Seq[AnyRef]] = runOutput(
+      cfg,
+      schema,
+      data,
+      messageTypeTest = { messageType =>
+        assert(
+          PrimitiveTypeName.INT64 == messageType.getColumns
+            .get(0)
+            .getPrimitiveType
+            .getPrimitiveTypeName
+        )
+        assert(
+          LogicalTypeAnnotation.timestampType(
+            true,
+            LogicalTypeAnnotation.TimeUnit.MICROS
+          ) == messageType.getColumns
+            .get(0)
+            .getPrimitiveType
+            .getLogicalTypeAnnotation
+        )
+      }
+    )
 
     assert(data.size == result.size)
     data.indices.foreach { i =>
