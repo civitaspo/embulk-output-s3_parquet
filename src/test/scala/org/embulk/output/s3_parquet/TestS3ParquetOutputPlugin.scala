@@ -234,4 +234,52 @@ class TestS3ParquetOutputPlugin extends EmbulkPluginTestHelper {
       }
     }
   }
+
+  test("timestamp-nanos") {
+    val schema = Schema.builder().add("c0", Types.TIMESTAMP).build()
+    val data: Seq[Seq[Timestamp]] = Seq(
+      Seq(Timestamp.ofEpochSecond(111_111_111L, 111_111_000L)),
+      Seq(Timestamp.ofEpochSecond(222_222_222L, 222_222_222L)),
+      Seq(Timestamp.ofEpochSecond(333_333_333L, 333_000L))
+    )
+    val cfg = newDefaultConfig.merge(
+      loadConfigSourceFromYamlString("""
+                                       |type_options:
+                                       |  timestamp:
+                                       |    logical_type: "timestamp-nanos"
+                                       |""".stripMargin)
+    )
+
+    val result: Seq[Seq[AnyRef]] = runOutput(
+      cfg,
+      schema,
+      data,
+      messageTypeTest = { messageType =>
+        assert(
+          PrimitiveTypeName.INT64 == messageType.getColumns
+            .get(0)
+            .getPrimitiveType
+            .getPrimitiveTypeName
+        )
+        assert(
+          LogicalTypeAnnotation.timestampType(
+            true,
+            LogicalTypeAnnotation.TimeUnit.NANOS
+          ) == messageType.getColumns
+            .get(0)
+            .getPrimitiveType
+            .getLogicalTypeAnnotation
+        )
+      }
+    )
+
+    assert(data.size == result.size)
+    data.indices.foreach { i =>
+      assert {
+        data(i).head.pipe(ts =>
+          (ts.getEpochSecond * 1_000_000_000L) + ts.getNano
+        ) == result(i).head.asInstanceOf[Long]
+      }
+    }
+  }
 }

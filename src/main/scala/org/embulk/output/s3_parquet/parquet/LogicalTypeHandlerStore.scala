@@ -51,6 +51,7 @@ object LogicalTypeHandlerStore {
   private val STRING_TO_LOGICAL_TYPE = Map[String, LogicalTypeHandler](
     "timestamp-millis" -> TimestampMillisLogicalTypeHandler,
     "timestamp-micros" -> TimestampMicrosLogicalTypeHandler,
+    "timestamp-nanos" -> TimestampNanosLogicalTypeHandler,
     "int8" -> Int8LogicalTypeHandler,
     "int16" -> Int16LogicalTypeHandler,
     "int32" -> Int32LogicalTypeHandler,

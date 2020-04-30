@@ -103,6 +103,36 @@ object TimestampMicrosLogicalTypeHandler extends LogicalTypeHandler {
   }
 }
 
+object TimestampNanosLogicalTypeHandler extends LogicalTypeHandler {
+
+  override def isConvertible(t: EmbulkType): Boolean = {
+    t == EmbulkTypes.TIMESTAMP
+  }
+
+  override def newSchemaFieldType(name: String): PrimitiveType = {
+    Types
+      .optional(PrimitiveTypeName.INT64)
+      .as(
+        LogicalTypeAnnotation
+          .timestampType(true, LogicalTypeAnnotation.TimeUnit.NANOS)
+      )
+      .named(name)
+  }
+
+  override def consume(orig: Any, recordConsumer: RecordConsumer): Unit = {
+    orig match {
+      case ts: Timestamp =>
+        val v =
+          (ts.getEpochSecond * 1_000_000_000L) + ts.getNano.asInstanceOf[Long]
+        recordConsumer.addLong(v)
+      case _ =>
+        throw new DataException(
+          "given mismatched type value; expected type is timestamp"
+        )
+    }
+  }
+}
+
 object Int8LogicalTypeHandler
     extends IntLogicalTypeHandler(LogicalTypeAnnotation.intType(8, true))
 

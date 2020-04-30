@@ -203,6 +203,8 @@ class CatalogRegistrator(
       case "timestamp-millis" => "timestamp"
       case "timestamp-micros" =>
         "bigint" // Glue cannot recognize timestamp-micros.
+      case "timestamp-nanos" =>
+        "bigint" // Glue cannot recognize timestamp-nanos.
       case "int8"  => "tinyint"
       case "int16" => "smallint"
       case "int32" => "int"
