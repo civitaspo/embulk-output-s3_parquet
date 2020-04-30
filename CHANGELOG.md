@@ -1,3 +1,11 @@
+0.4.1 (2020-04-30)
+==================
+
+* [Enhancement] [#37](https://github.com/civitaspo/embulk-output-s3_parquet/pull/37) Rewrite the integration tests to make writing and reading tests easier & Use Diagrams for all test cases.
+* [Enhancement] [#38](https://github.com/civitaspo/embulk-output-s3_parquet/pull/38) Make all column types enable to use LogicalTypeHandler.
+* [Enhancement] [#38](https://github.com/civitaspo/embulk-output-s3_parquet/pull/38) Make parquet schema testable.
+* [New Feature] [#38](https://github.com/civitaspo/embulk-output-s3_parquet/pull/38) Support timestamp-nanos.
+
 0.4.0 (2020-04-28)
 ==================
 
