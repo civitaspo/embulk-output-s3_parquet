@@ -8,6 +8,7 @@ import org.apache.parquet.schema.{
   Types
 }
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName
+import org.embulk.config.ConfigException
 import org.embulk.spi.{Column, ColumnVisitor, Schema}
 
 object EmbulkMessageType {
@@ -55,6 +56,10 @@ object EmbulkMessageType {
         logicalTypeHandlers.get(column.getName, column.getType) match {
           case Some(handler) if handler.isConvertible(column.getType) =>
             handler.newSchemaFieldType(column.getName)
+          case Some(handler) =>
+            throw new ConfigException(
+              s"${column.getType} is not convertible by ${handler.getClass.getName}."
+            )
           case _ => default
         }
       )

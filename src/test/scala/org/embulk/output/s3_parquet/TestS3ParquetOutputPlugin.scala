@@ -1,6 +1,5 @@
 package org.embulk.output.s3_parquet
 
-import org.apache.parquet.column.ColumnDescriptor
 import org.apache.parquet.schema.LogicalTypeAnnotation
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName
 import org.embulk.spi.Schema
