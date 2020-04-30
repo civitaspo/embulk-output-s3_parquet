@@ -64,6 +64,25 @@ class TestLogicalTypeHandler extends AnyFunSuite with Diagrams {
     assert(actual.failed.get.isInstanceOf[DataException])
   }
 
+  test(
+    "TimestampNanosLogicalTypeHandler.isConvertible() returns true for timestamp"
+  ) {
+    val h = TimestampNanosLogicalTypeHandler
+
+    assert(h.isConvertible(Types.TIMESTAMP))
+    assert(!h.isConvertible(Types.BOOLEAN))
+  }
+
+  test(
+    "TimestampNanosLogicalTypeHandler.consume() raises DataException if given type is not timestamp"
+  ) {
+    val h = TimestampNanosLogicalTypeHandler
+    val actual = Try(h.consume("invalid", null))
+
+    assert(actual.isFailure)
+    assert(actual.failed.get.isInstanceOf[DataException])
+  }
+
   test("JsonLogicalTypeHandler.isConvertible() returns true for json") {
     val h = JsonLogicalTypeHandler
 

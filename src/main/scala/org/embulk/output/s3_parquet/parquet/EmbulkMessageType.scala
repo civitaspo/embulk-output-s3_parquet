@@ -47,70 +47,62 @@ object EmbulkMessageType {
         LogicalTypeHandlerStore.empty
   ) extends ColumnVisitor {
 
-    override def booleanColumn(column: Column): Unit = {
+    private def addTypeByLogicalTypeHandlerOrDefault(
+        column: Column,
+        default: => Type
+    ): Unit = {
       builder.add(
-        Types.optional(PrimitiveTypeName.BOOLEAN).named(column.getName)
+        logicalTypeHandlers.get(column.getName, column.getType) match {
+          case Some(handler) if handler.isConvertible(column.getType) =>
+            handler.newSchemaFieldType(column.getName)
+          case _ => default
+        }
       )
+    }
+
+    override def booleanColumn(column: Column): Unit = {
+      addTypeByLogicalTypeHandlerOrDefault(column, default = {
+        Types.optional(PrimitiveTypeName.BOOLEAN).named(column.getName)
+      })
     }
 
     override def longColumn(column: Column): Unit = {
-      val name = column.getName
-      val et = column.getType
-
-      val t = logicalTypeHandlers.get(name, et) match {
-        case Some(h) if h.isConvertible(et) => h.newSchemaFieldType(name)
-        case _ =>
-          Types.optional(PrimitiveTypeName.INT64).named(column.getName)
-      }
-
-      builder.add(t)
+      addTypeByLogicalTypeHandlerOrDefault(column, default = {
+        Types.optional(PrimitiveTypeName.INT64).named(column.getName)
+      })
     }
 
     override def doubleColumn(column: Column): Unit = {
-      builder.add(
+      addTypeByLogicalTypeHandlerOrDefault(column, default = {
         Types.optional(PrimitiveTypeName.DOUBLE).named(column.getName)
-      )
+      })
     }
 
     override def stringColumn(column: Column): Unit = {
-      builder.add(
+      addTypeByLogicalTypeHandlerOrDefault(column, default = {
         Types
           .optional(PrimitiveTypeName.BINARY)
           .as(LogicalTypeAnnotation.stringType())
           .named(column.getName)
-      )
+      })
     }
 
     override def timestampColumn(column: Column): Unit = {
-      val name = column.getName
-      val et = column.getType
-
-      val t = logicalTypeHandlers.get(name, et) match {
-        case Some(h) if h.isConvertible(et) => h.newSchemaFieldType(name)
-        case _ =>
-          Types
-            .optional(PrimitiveTypeName.BINARY)
-            .as(LogicalTypeAnnotation.stringType())
-            .named(name)
-      }
-
-      builder.add(t)
+      addTypeByLogicalTypeHandlerOrDefault(column, default = {
+        Types
+          .optional(PrimitiveTypeName.BINARY)
+          .as(LogicalTypeAnnotation.stringType())
+          .named(column.getName)
+      })
     }
 
     override def jsonColumn(column: Column): Unit = {
-      val name = column.getName
-      val et = column.getType
-
-      val t = logicalTypeHandlers.get(name, et) match {
-        case Some(h) if h.isConvertible(et) => h.newSchemaFieldType(name)
-        case _ =>
-          Types
-            .optional(PrimitiveTypeName.BINARY)
-            .as(LogicalTypeAnnotation.stringType())
-            .named(name)
-      }
-
-      builder.add(t)
+      addTypeByLogicalTypeHandlerOrDefault(column, default = {
+        Types
+          .optional(PrimitiveTypeName.BINARY)
+          .as(LogicalTypeAnnotation.stringType())
+          .named(column.getName)
+      })
     }
   }
 

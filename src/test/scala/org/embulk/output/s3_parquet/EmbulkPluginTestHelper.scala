@@ -13,8 +13,11 @@ import com.amazonaws.services.s3.transfer.{
   TransferManagerBuilder
 }
 import com.google.inject.{Binder, Guice, Module, Stage}
+import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{Path => HadoopPath}
-import org.apache.parquet.hadoop.ParquetReader
+import org.apache.parquet.hadoop.{ParquetFileReader, ParquetReader}
+import org.apache.parquet.hadoop.util.HadoopInputFile
+import org.apache.parquet.schema.MessageType
 import org.apache.parquet.tools.read.{SimpleReadSupport, SimpleRecord}
 import org.embulk.{TestPluginSourceModule, TestUtilityModule}
 import org.embulk.config.{
@@ -116,7 +119,8 @@ abstract class EmbulkPluginTestHelper
   def runOutput(
       outConfig: ConfigSource,
       schema: Schema,
-      data: Seq[Seq[Any]]
+      data: Seq[Seq[Any]],
+      messageTypeTest: MessageType => Unit = { _ => }
   ): Seq[Seq[AnyRef]] = {
     try {
       Exec.doWith(
@@ -157,7 +161,7 @@ abstract class EmbulkPluginTestHelper
       case ex: ExecutionException => throw ex.getCause
     }
 
-    readS3Parquet(TEST_BUCKET_NAME, TEST_PATH_PREFIX)
+    readS3Parquet(TEST_BUCKET_NAME, TEST_PATH_PREFIX, messageTypeTest)
   }
 
   private def withLocalStackS3Client[A](f: AmazonS3 => A): A = {
@@ -180,7 +184,11 @@ abstract class EmbulkPluginTestHelper
     finally client.shutdown()
   }
 
-  def readS3Parquet(bucket: String, prefix: String): Seq[Seq[AnyRef]] = {
+  private def readS3Parquet(
+      bucket: String,
+      prefix: String,
+      messageTypeTest: MessageType => Unit = { _ => }
+  ): Seq[Seq[AnyRef]] = {
     val tmpDir: Path = Files.createTempDirectory("embulk-output-parquet")
     withLocalStackS3Client { s3 =>
       val xfer: TransferManager = TransferManagerBuilder
@@ -207,11 +215,21 @@ abstract class EmbulkPluginTestHelper
       .map(_.getAbsolutePath)
       .foldLeft(Seq[Seq[AnyRef]]()) {
         (result: Seq[Seq[AnyRef]], path: String) =>
-          result ++ readParquetFile(path)
+          result ++ readParquetFile(path, messageTypeTest)
       }
   }
 
-  private def readParquetFile(pathString: String): Seq[Seq[AnyRef]] = {
+  private def readParquetFile(
+      pathString: String,
+      messageTypeTest: MessageType => Unit = { _ => }
+  ): Seq[Seq[AnyRef]] = {
+    Using.resource(
+      ParquetFileReader.open(
+        HadoopInputFile
+          .fromPath(new HadoopPath(pathString), new Configuration())
+      )
+    ) { reader => messageTypeTest(reader.getFileMetaData.getSchema) }
+
     val reader: ParquetReader[SimpleRecord] = ParquetReader
       .builder(
         new SimpleReadSupport(),
