@@ -1,3 +1,8 @@
+0.4.2 (2020-04-30)
+==================
+
+* [Enhancement] [#40](https://github.com/civitaspo/embulk-output-s3_parquet/pull/40) Check combinations with embulk-type and logical-type strictly.
+
 0.4.1 (2020-04-30)
 ==================
 
