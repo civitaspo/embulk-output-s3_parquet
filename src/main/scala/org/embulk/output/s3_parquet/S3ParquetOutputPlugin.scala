@@ -25,7 +25,8 @@ import org.embulk.config.{
 }
 import org.embulk.output.s3_parquet.S3ParquetOutputPlugin.{
   ColumnOptionTask,
-  PluginTask
+  PluginTask,
+  TypeOptionTask
 }
 import org.embulk.output.s3_parquet.aws.Aws
 import org.embulk.output.s3_parquet.parquet.{
@@ -44,7 +45,6 @@ import org.embulk.spi.time.TimestampFormatter.TimestampColumnOption
 import org.embulk.spi.util.Timestamps
 import org.slf4j.{Logger, LoggerFactory}
 
-import scala.jdk.CollectionConverters._
 import scala.util.chaining._
 
 object S3ParquetOutputPlugin {
@@ -70,9 +70,8 @@ object S3ParquetOutputPlugin {
     @ConfigDefault("\"uncompressed\"")
     def getCompressionCodecString: String
 
-    def setCompressionCodec(v: CompressionCodecName): Unit
-
     def getCompressionCodec: CompressionCodecName
+    def setCompressionCodec(v: CompressionCodecName): Unit
 
     @Config("column_options")
     @ConfigDefault("{}")
@@ -131,6 +130,8 @@ object S3ParquetOutputPlugin {
 
 class S3ParquetOutputPlugin extends OutputPlugin {
 
+  import implicits._
+
   val logger: Logger = LoggerFactory.getLogger(classOf[S3ParquetOutputPlugin])
 
   override def transaction(
@@ -149,21 +150,17 @@ class S3ParquetOutputPlugin extends OutputPlugin {
         s"s3://${task.getBucket}/${task.getPathPrefix.replaceFirst("(.*/)[^/]+$", "$1")}"
       val parquetColumnLogicalTypes: Map[String, String] =
         Map.newBuilder[String, String].pipe { builder =>
-          val cOptions = task.getColumnOptions.asScala
-          val tOptions = task.getTypeOptions.asScala
-          schema.getColumns.asScala.foreach { c =>
-            cOptions.get(c.getName)
-            if (cOptions
-                  .contains(c.getName) && cOptions(c.getName).getLogicalType.isPresent) {
-              builder
-                .addOne(c.getName -> cOptions(c.getName).getLogicalType.get())
-            }
-            else if (tOptions.contains(c.getType.getName) && tOptions(
-                       c.getType.getName
-                     ).getLogicalType.isPresent) {
-              builder.addOne(
-                c.getName -> tOptions(c.getType.getName).getLogicalType.get()
-              )
+          val cOptions: Map[String, ColumnOptionTask] = task.getColumnOptions
+          val tOptions: Map[String, TypeOptionTask] = task.getTypeOptions
+          schema.getColumns.foreach { c =>
+            {
+              for (o <- cOptions.get(c.getName);
+                   logicalType <- o.getLogicalType)
+                yield builder.addOne(c.getName -> logicalType)
+            }.orElse {
+              for (o <- tOptions.get(c.getType.getName);
+                   logicalType <- o.getLogicalType)
+                yield builder.addOne(c.getName -> logicalType)
             }
           }
           builder.result()
@@ -217,7 +214,7 @@ class S3ParquetOutputPlugin extends OutputPlugin {
     task.getColumnOptions.forEach { (k: String, opt: ColumnOptionTask) =>
       val c = schema.lookupColumn(k)
       val useTimestampOption =
-        opt.getFormat.isPresent || opt.getTimeZoneId.isPresent
+        opt.getFormat.isDefined || opt.getTimeZoneId.isDefined
       if (!c.getType.getName.equals("timestamp") && useTimestampOption) {
         throw new ConfigException(s"column:$k is not 'timestamp' type.")
       }
@@ -257,7 +254,7 @@ class S3ParquetOutputPlugin extends OutputPlugin {
       taskCount: Int,
       successTaskReports: JList[TaskReport]
   ): Unit = {
-    successTaskReports.forEach { tr =>
+    successTaskReports.foreach { tr =>
       logger.info(
         s"Created: s3://${tr.get(classOf[String], "bucket")}/${tr.get(classOf[String], "key")}, "
           + s"version_id: ${tr.get(classOf[String], "version_id", null)}, "
@@ -272,24 +269,20 @@ class S3ParquetOutputPlugin extends OutputPlugin {
       taskIndex: Int
   ): TransactionalPageOutput = {
     val task = taskSource.loadTask(classOf[PluginTask])
-    val bufferDir: String = task.getBufferDir.orElse(
+    val bufferDir: String = task.getBufferDir.getOrElse(
       Files.createTempDirectory("embulk-output-s3_parquet-").toString
     )
     val bufferFile: String = Paths
       .get(bufferDir, s"embulk-output-s3_parquet-task-$taskIndex-0.parquet")
       .toString
     val destS3bucket: String = task.getBucket
-    val destS3Key: String = task.getPathPrefix + String.format(
-      task.getSequenceFormat,
-      taskIndex: Integer,
-      0: Integer
-    ) + task.getFileExt
+    val destS3Key: String =
+      s"${task.getPathPrefix}${task.getSequenceFormat.format(taskIndex, 0)}${task.getFileExt}"
 
     val pageReader: PageReader = new PageReader(schema)
     val aws: Aws = Aws(task)
     val timestampFormatters: Seq[TimestampFormatter] = Timestamps
       .newTimestampColumnFormatters(task, schema, task.getColumnOptions)
-      .toSeq
     val logicalTypeHandlers = LogicalTypeHandlerStore.fromEmbulkOptions(
       task.getTypeOptions,
       task.getColumnOptions

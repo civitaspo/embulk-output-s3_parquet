@@ -27,7 +27,6 @@ import org.embulk.spi.`type`.{
 }
 import org.slf4j.{Logger, LoggerFactory}
 
-import scala.jdk.CollectionConverters._
 import scala.util.Try
 
 object CatalogRegistrator {
@@ -89,6 +88,8 @@ class CatalogRegistrator(
     loggerOption: Option[Logger] = None,
     parquetColumnLogicalTypes: Map[String, String] = Map.empty
 ) {
+
+  import implicits._
 
   val logger: Logger =
     loggerOption.getOrElse(LoggerFactory.getLogger(classOf[CatalogRegistrator]))
@@ -156,7 +157,7 @@ class CatalogRegistrator(
             "EXTERNAL" -> "TRUE",
             "classification" -> "parquet",
             "parquet.compression" -> compressionCodec.name()
-          ).asJava
+          )
         )
         .withStorageDescriptor(
           new StorageDescriptor()
@@ -174,7 +175,7 @@ class CatalogRegistrator(
                 .withSerializationLibrary(
                   "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe"
                 )
-                .withParameters(Map("serialization.format" -> "1").asJava)
+                .withParameters(Map("serialization.format" -> "1"))
             )
         )
     )
@@ -183,8 +184,8 @@ class CatalogRegistrator(
 
   private def getGlueSchema: Seq[Column] = {
     val columnOptions: Map[String, ColumnOptions] =
-      task.getColumnOptions.asScala.toMap
-    schema.getColumns.asScala.toSeq.map { c =>
+      task.getColumnOptions
+    schema.getColumns.map { c =>
       val cType: String =
         if (columnOptions.contains(c.getName)) columnOptions(c.getName).getType
         else if (parquetColumnLogicalTypes.contains(c.getName))

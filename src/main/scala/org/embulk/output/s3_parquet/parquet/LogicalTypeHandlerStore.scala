@@ -9,8 +9,6 @@ import org.embulk.output.s3_parquet.S3ParquetOutputPlugin.{
 }
 import org.embulk.spi.`type`.{Type, Types}
 
-import scala.jdk.CollectionConverters._
-
 /**
   * A storage has mapping from logical type query (column name, type) to handler.
   *
@@ -37,6 +35,8 @@ case class LogicalTypeHandlerStore private (
 }
 
 object LogicalTypeHandlerStore {
+
+  import org.embulk.output.s3_parquet.implicits._
 
   private val STRING_TO_EMBULK_TYPE = Map[String, Type](
     "boolean" -> Types.BOOLEAN,
@@ -74,7 +74,7 @@ object LogicalTypeHandlerStore {
       typeOpts: JMap[String, TypeOptionTask],
       columnOpts: JMap[String, ColumnOptionTask]
   ): LogicalTypeHandlerStore = {
-    val fromEmbulkType = typeOpts.asScala
+    val fromEmbulkType = typeOpts
       .filter(_._2.getLogicalType.isPresent)
       .map[Type, LogicalTypeHandler] {
         case (k, v) =>
@@ -86,9 +86,8 @@ object LogicalTypeHandlerStore {
             throw new ConfigException("invalid logical types in type_options")
           }
       }
-      .toMap
 
-    val fromColumnName = columnOpts.asScala
+    val fromColumnName = columnOpts
       .filter(_._2.getLogicalType.isPresent)
       .map[String, LogicalTypeHandler] {
         case (k, v) =>
@@ -101,7 +100,6 @@ object LogicalTypeHandlerStore {
             )
           }
       }
-      .toMap
 
     LogicalTypeHandlerStore(fromEmbulkType, fromColumnName)
   }
