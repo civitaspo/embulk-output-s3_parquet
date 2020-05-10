@@ -3,7 +3,7 @@ package org.embulk.output.s3_parquet.parquet
 import java.util.{Map => JMap}
 
 import org.embulk.config.ConfigException
-import org.embulk.output.s3_parquet.S3ParquetOutputPlugin.{
+import org.embulk.output.s3_parquet.PluginTask.{
   ColumnOptionTask,
   TypeOptionTask
 }
