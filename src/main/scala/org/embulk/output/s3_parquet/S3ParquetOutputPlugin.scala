@@ -1,28 +1,14 @@
 package org.embulk.output.s3_parquet
 
 import java.nio.file.{Files, Paths}
-import java.util.{IllegalFormatException, Locale, List => JList}
+import java.util.{List => JList}
 
-import com.amazonaws.services.s3.model.CannedAccessControlList
 import org.apache.parquet.column.ParquetProperties
 import org.apache.parquet.hadoop.ParquetWriter
-import org.apache.parquet.hadoop.metadata.CompressionCodecName
-import org.embulk.config.{
-  ConfigDiff,
-  ConfigException,
-  ConfigSource,
-  TaskReport,
-  TaskSource
-}
-import org.embulk.output.s3_parquet.PluginTask.{
-  ColumnOptionTask,
-  TypeOptionTask
-}
+import org.embulk.config.{ConfigDiff, ConfigSource, TaskReport, TaskSource}
 import org.embulk.output.s3_parquet.aws.Aws
-import org.embulk.output.s3_parquet.parquet.{
-  LogicalTypeHandlerStore,
-  ParquetFileWriter
-}
+import org.embulk.output.s3_parquet.catalog.CatalogRegistrator
+import org.embulk.output.s3_parquet.parquet.ParquetFileWriteSupport
 import org.embulk.spi.{
   Exec,
   OutputPlugin,
@@ -30,11 +16,7 @@ import org.embulk.spi.{
   Schema,
   TransactionalPageOutput
 }
-import org.embulk.spi.time.TimestampFormatter
-import org.embulk.spi.util.Timestamps
 import org.slf4j.{Logger, LoggerFactory}
-
-import scala.util.chaining._
 
 class S3ParquetOutputPlugin extends OutputPlugin {
 
@@ -48,101 +30,27 @@ class S3ParquetOutputPlugin extends OutputPlugin {
       taskCount: Int,
       control: OutputPlugin.Control
   ): ConfigDiff = {
-    val task: PluginTask = config.loadConfig(classOf[PluginTask])
-
-    configure(task, schema)
+    val task: PluginTask = PluginTask.loadConfig(config)
+    val support: ParquetFileWriteSupport = ParquetFileWriteSupport(task, schema)
+    support.showOutputSchema(logger)
     control.run(task.dump)
 
     task.getCatalog.ifPresent { catalog =>
       val location =
         s"s3://${task.getBucket}/${task.getPathPrefix.replaceFirst("(.*/)[^/]+$", "$1")}"
-      val parquetColumnLogicalTypes: Map[String, String] =
-        Map.newBuilder[String, String].pipe { builder =>
-          val cOptions: Map[String, ColumnOptionTask] = task.getColumnOptions
-          val tOptions: Map[String, TypeOptionTask] = task.getTypeOptions
-          schema.getColumns.foreach { c =>
-            {
-              for (o <- cOptions.get(c.getName);
-                   logicalType <- o.getLogicalType)
-                yield builder.addOne(c.getName -> logicalType)
-            }.orElse {
-              for (o <- tOptions.get(c.getType.getName);
-                   logicalType <- o.getLogicalType)
-                yield builder.addOne(c.getName -> logicalType)
-            }
-          }
-          builder.result()
-        }
-      val cr = CatalogRegistrator(
-        aws = Aws(task),
+      val cr = CatalogRegistrator.fromTask(
         task = catalog,
+        aws = Aws(task),
         schema = schema,
         location = location,
         compressionCodec = task.getCompressionCodec,
-        parquetColumnLogicalTypes = parquetColumnLogicalTypes
+        defaultGlueTypes =
+          support.parquetSchema.transform((k, v) => v.glueDataType(k))
       )
       cr.run()
     }
 
     Exec.newConfigDiff
-  }
-
-  private def configure(task: PluginTask, schema: Schema): Unit = {
-    // sequence_format
-    try String.format(task.getSequenceFormat, 0: Integer, 0: Integer)
-    catch {
-      case e: IllegalFormatException =>
-        throw new ConfigException(
-          s"Invalid sequence_format: ${task.getSequenceFormat}",
-          e
-        )
-    }
-
-    // compression_codec
-    CompressionCodecName
-      .values()
-      .find(v =>
-        v.name()
-          .toLowerCase(Locale.ENGLISH)
-          .equals(task.getCompressionCodecString)
-      ) match {
-      case Some(v) => task.setCompressionCodec(v)
-      case None =>
-        val unsupported: String = task.getCompressionCodecString
-        val supported: String = CompressionCodecName
-          .values()
-          .map(v => s"'${v.name().toLowerCase}'")
-          .mkString(", ")
-        throw new ConfigException(
-          s"'$unsupported' is unsupported: `compression_codec` must be one of [$supported]."
-        )
-    }
-
-    // column_options
-    task.getColumnOptions.forEach { (k: String, opt: ColumnOptionTask) =>
-      val c = schema.lookupColumn(k)
-      val useTimestampOption =
-        opt.getFormat.isDefined || opt.getTimeZoneId.isDefined
-      if (!c.getType.getName.equals("timestamp") && useTimestampOption) {
-        throw new ConfigException(s"column:$k is not 'timestamp' type.")
-      }
-    }
-
-    // canned_acl
-    CannedAccessControlList
-      .values()
-      .find(v => v.toString.equals(task.getCannedAclString)) match {
-      case Some(v) => task.setCannedAcl(v)
-      case None =>
-        val unsupported: String = task.getCannedAclString
-        val supported: String = CannedAccessControlList
-          .values()
-          .map(v => s"'${v.toString}'")
-          .mkString(", ")
-        throw new ConfigException(
-          s"'$unsupported' is unsupported: `canned_acl` must be one of [$supported]."
-        )
-    }
   }
 
   override def resume(
@@ -176,7 +84,7 @@ class S3ParquetOutputPlugin extends OutputPlugin {
       schema: Schema,
       taskIndex: Int
   ): TransactionalPageOutput = {
-    val task = taskSource.loadTask(classOf[PluginTask])
+    val task = PluginTask.loadTask(taskSource)
     val bufferDir: String = task.getBufferDir.getOrElse(
       Files.createTempDirectory("embulk-output-s3_parquet-").toString
     )
@@ -189,20 +97,10 @@ class S3ParquetOutputPlugin extends OutputPlugin {
 
     val pageReader: PageReader = new PageReader(schema)
     val aws: Aws = Aws(task)
-    val timestampFormatters: Seq[TimestampFormatter] = Timestamps
-      .newTimestampColumnFormatters(task, schema, task.getColumnOptions)
-    val logicalTypeHandlers = LogicalTypeHandlerStore.fromEmbulkOptions(
-      task.getTypeOptions,
-      task.getColumnOptions
-    )
     val parquetWriter: ParquetWriter[PageReader] =
       ContextClassLoaderSwapper.usingPluginClass {
-        ParquetFileWriter
-          .builder()
-          .withPath(bufferFile)
-          .withSchema(schema)
-          .withLogicalTypeHandlers(logicalTypeHandlers)
-          .withTimestampFormatters(timestampFormatters)
+        ParquetFileWriteSupport(task, schema)
+          .newWriterBuilder(bufferFile)
           .withCompressionCodec(task.getCompressionCodec)
           .withDictionaryEncoding(
             task.getEnableDictionaryEncoding.orElse(

@@ -22,11 +22,7 @@ class TestS3ParquetOutputPluginConfigException extends EmbulkPluginTestHelper {
     )
     val caught = intercept[ConfigException](runOutput(cfg, schema, data))
     assert(caught.isInstanceOf[ConfigException])
-    assert(
-      caught.getMessage.startsWith(
-        "string is not convertible by org.embulk.output.s3_parquet.parquet.TimestampMillisLogicalTypeHandler"
-      )
-    )
+    assert(caught.getMessage.startsWith("Unsupported column type: "))
   }
 
   test(
@@ -45,11 +41,7 @@ class TestS3ParquetOutputPluginConfigException extends EmbulkPluginTestHelper {
     )
     val caught = intercept[ConfigException](runOutput(cfg, schema, data))
     assert(caught.isInstanceOf[ConfigException])
-    assert(
-      caught.getMessage.startsWith(
-        "string is not convertible by org.embulk.output.s3_parquet.parquet.TimestampMillisLogicalTypeHandler"
-      )
-    )
+    assert(caught.getMessage.startsWith("Unsupported column type: "))
 
   }
 

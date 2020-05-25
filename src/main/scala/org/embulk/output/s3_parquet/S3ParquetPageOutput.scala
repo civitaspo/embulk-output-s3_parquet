@@ -24,7 +24,9 @@ case class S3ParquetPageOutput(
   override def add(page: Page): Unit = {
     reader.setPage(page)
     while (reader.nextRecord()) {
-      writer.write(reader)
+      ContextClassLoaderSwapper.usingPluginClass {
+        writer.write(reader)
+      }
     }
   }
 
