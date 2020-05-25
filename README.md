@@ -24,7 +24,16 @@
 - **column_options**: a map whose keys are name of columns, and values are configuration with following parameters (optional)
   - **timezone**: timezone if type of this column is timestamp. If not set, **default_timezone** is used. (string, optional)
   - **format**: timestamp format if type of this column is timestamp. If not set, **default_timestamp_format**: is used. (string, optional)
-  - **logical_type**: a Parquet logical type name (`timestamp-millis`, `timestamp-micros`, `timestamp-nanos`, `json`, `int8`, `int16`, `int32`, `int64`, `uint8`, `uint16`, `uint32`, `uint64`) (string, optional)
+  - **converted_type**: a Parquet converted type name (`timestamp-millis`, `timestamp-micros`, `timestamp-nanos`, `json`, `int8`, `int16`, `int32`, `int64`, `uint8`, `uint16`, `uint32`, `uint64`) (string, optional)
+  - **logical_type**: **[DEPRECATED: Use **converted_type** instead]** a Parquet converted type name (`timestamp-millis`, `timestamp-micros`, `timestamp-nanos`, `json`, `int8`, `int16`, `int32`, `int64`, `uint8`, `uint16`, `uint32`, `uint64`) (string, optional)
+  - **logical_type**: configuration for the detailed logical type. See [Logical Type Specification](https://github.com/apache/parquet-format/blob/apache-parquet-format-2.7.0/LogicalTypes.md) (optional)
+    - **name**: The name of logical type (`"date"`, `"decimal"`, `"int"`, `"json"`, `"time"`, `"timestamp"`) (string, required)
+    - **bit_width**: The bit width for `"int"` logical type (Allowed bit width values are `8`, `16`, `32`, `64`). (int, default: `64`)
+    - **is_signed**: Signed or not for `"int"` logical type (boolean, default: `true`)
+    - **scale**: The scale for `"decimal"` logical type (int, default: `0`)
+    - **precision**: The precision for `"decimal"` logical type (int, default: `0`)
+    - **is_adjusted_to_utc**: (boolean, default: `true`)
+    - **time_unit**: The precision for `"time"` or `"timestamp"` logical type (Allowed values are `"MILLIS`, `MICROS`, `NANOS`)
 - **canned_acl**: grants one of [canned ACLs](https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#CannedACL) for created objects (string, default: `private`)
 - **block_size**: The block size is the size of a row group being buffered in memory. This limits the memory usage when writing. Larger values will improve the I/O when reading but consume more memory when writing. (int, default: `134217728` (128MB))
 - **page_size**: The page size is for compression. When reading, each page can be decompressed independently. A block is composed of pages. The page is the smallest unit that must be read fully to access a single record. If this value is too small, the compression will deteriorate. (int, default: `1048576` (1MB))
@@ -80,7 +89,7 @@
       |timestamp|string|
       |json|string|
       
-      |parquet logical type|glue data type|note|
+      |parquet converted type|glue data type|note|
       |:---|:---|:---|
       |timestamp-millis|timestamp||
       |timestamp-micros|long|Glue cannot recognize timestamp-micros.|
@@ -106,7 +115,16 @@
   - **password** proxy password (string, optional)
 - **buffer_dir**: buffer directory for parquet files to be uploaded on S3 (string, default: Create a Temporary Directory)
 - **type_options**:  a map whose keys are name of embulk type(`boolean`, `long`, `double`, `string`, `timestamp`, `json`), and values are configuration with following parameters (optional)
-  - **logical_type**: a Parquet logical type name (`timestamp-millis`, `timestamp-micros`, `timestamp-nanos`, `json`, `int8`, `int16`, `int32`, `int64`, `uint8`, `uint16`, `uint32`, `uint64`) (string, optional)
+  - **converted_type**: a Parquet converted type name (`timestamp-millis`, `timestamp-micros`, `timestamp-nanos`, `json`, `int8`, `int16`, `int32`, `int64`, `uint8`, `uint16`, `uint32`, `uint64`) (string, optional)
+  - **logical_type**: **[DEPRECATED: Use **converted_type** instead]** a Parquet converted type name (`timestamp-millis`, `timestamp-micros`, `timestamp-nanos`, `json`, `int8`, `int16`, `int32`, `int64`, `uint8`, `uint16`, `uint32`, `uint64`) (string, optional)
+  - **logical_type**: configuration for the detailed logical type. See [Logical Type Specification](https://github.com/apache/parquet-format/blob/apache-parquet-format-2.7.0/LogicalTypes.md) (optional)
+    - **name**: The name of logical type (`"date"`, `"decimal"`, `"int"`, `"json"`, `"time"`, `"timestamp"`) (string, required)
+    - **bit_width**: The bit width for `"int"` logical type (Allowed bit width values are `8`, `16`, `32`, `64`). (int, default: `64`)
+    - **is_signed**: Signed or not for `"int"` logical type (boolean, default: `true`)
+    - **scale**: The scale for `"decimal"` logical type (int, default: `0`)
+    - **precision**: The precision for `"decimal"` logical type (int, default: `0`)
+    - **is_adjusted_to_utc**: (boolean, default: `true`)
+    - **time_unit**: The precision for `"time"` or `"timestamp"` logical type (Allowed values are `"MILLIS`, `MICROS`, `NANOS`)
 
 
 ## Example
