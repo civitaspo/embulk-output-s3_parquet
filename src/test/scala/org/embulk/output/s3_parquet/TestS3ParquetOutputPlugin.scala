@@ -24,11 +24,11 @@ class TestS3ParquetOutputPlugin extends EmbulkPluginTestHelper {
     // scalafmt: { maxColumn = 200 }
     val parser = TimestampParser.of("%Y-%m-%d %H:%M:%S.%N %z", "UTC")
     val data: Seq[Seq[Any]] = Seq(
-      Seq(true, 0L, 0.0d, "c212c89f91", parser.parse("2017-10-22 19:53:31.000000 +0900"), newJson(Map("a" -> 0, "b" -> "00"))),
-      Seq(false, 1L, -0.5d, "aaaaa", parser.parse("2017-10-22 19:53:31.000000 +0900"), newJson(Map("a" -> 1, "b" -> "11"))),
-      Seq(false, 2L, 1.5d, "90823c6a1f", parser.parse("2017-10-23 23:42:43.000000 +0900"), newJson(Map("a" -> 2, "b" -> "22"))),
-      Seq(true, 3L, 0.44d, "", parser.parse("2017-10-22 06:12:13.000000 +0900"), newJson(Map("a" -> 3, "b" -> "33", "c" -> 3.3))),
-      Seq(false, 9999L, 10000.33333d, "e56a40571c", parser.parse("2017-10-23 04:59:16.000000 +0900"), newJson(Map("a" -> 4, "b" -> "44", "c" -> 4.4, "d" -> true)))
+      Seq(true, 0L, 0.0d, "c212c89f91", parser.parse("2017-10-22 19:53:31.000000 +0900"), json("""{"a":0,"b":"00"}""")),
+      Seq(false, 1L, -0.5d, "aaaaa", parser.parse("2017-10-22 19:53:31.000000 +0900"), json("""{"a":1,"b":"11"}""")),
+      Seq(false, 2L, 1.5d, "90823c6a1f", parser.parse("2017-10-23 23:42:43.000000 +0900"), json("""{"a":2,"b":"22"}""")),
+      Seq(true, 3L, 0.44d, "", parser.parse("2017-10-22 06:12:13.000000 +0900"), json("""{"a":3,"b":"33","c":3.3}""")),
+      Seq(false, 9999L, 10000.33333d, "e56a40571c", parser.parse("2017-10-23 04:59:16.000000 +0900"), json("""{"a":4,"b":"44","c":4.4,"d":true}"""))
     )
     // scalafmt: { maxColumn = 80 }
 
@@ -38,79 +38,22 @@ class TestS3ParquetOutputPlugin extends EmbulkPluginTestHelper {
         schema,
         data,
         messageTypeTest = { messageType =>
-          assert(
-            PrimitiveTypeName.BOOLEAN == messageType.getColumns
-              .get(0)
-              .getPrimitiveType
-              .getPrimitiveTypeName
-          )
-          assert(
-            PrimitiveTypeName.INT64 == messageType.getColumns
-              .get(1)
-              .getPrimitiveType
-              .getPrimitiveTypeName
-          )
-          assert(
-            PrimitiveTypeName.DOUBLE == messageType.getColumns
-              .get(2)
-              .getPrimitiveType
-              .getPrimitiveTypeName
-          )
-          assert(
-            PrimitiveTypeName.BINARY == messageType.getColumns
-              .get(3)
-              .getPrimitiveType
-              .getPrimitiveTypeName
-          )
-          assert(
-            PrimitiveTypeName.BINARY == messageType.getColumns
-              .get(4)
-              .getPrimitiveType
-              .getPrimitiveTypeName
-          )
-          assert(
-            PrimitiveTypeName.BINARY == messageType.getColumns
-              .get(5)
-              .getPrimitiveType
-              .getPrimitiveTypeName
-          )
-
-          assert(
-            null == messageType.getColumns
-              .get(0)
-              .getPrimitiveType
-              .getLogicalTypeAnnotation
-          )
-          assert(
-            null == messageType.getColumns
-              .get(1)
-              .getPrimitiveType
-              .getLogicalTypeAnnotation
-          )
-          assert(
-            null == messageType.getColumns
-              .get(2)
-              .getPrimitiveType
-              .getLogicalTypeAnnotation
-          )
-          assert(
-            LogicalTypeAnnotation.stringType() == messageType.getColumns
-              .get(3)
-              .getPrimitiveType
-              .getLogicalTypeAnnotation
-          )
-          assert(
-            LogicalTypeAnnotation.stringType() == messageType.getColumns
-              .get(4)
-              .getPrimitiveType
-              .getLogicalTypeAnnotation
-          )
-          assert(
-            LogicalTypeAnnotation.stringType() == messageType.getColumns
-              .get(5)
-              .getPrimitiveType
-              .getLogicalTypeAnnotation
-          )
+          // format: off
+          assert(PrimitiveTypeName.BOOLEAN == messageType.getColumns.get(0).getPrimitiveType.getPrimitiveTypeName)
+          assert(PrimitiveTypeName.INT64 == messageType.getColumns.get(1).getPrimitiveType.getPrimitiveTypeName)
+          assert(PrimitiveTypeName.DOUBLE == messageType.getColumns.get(2).getPrimitiveType.getPrimitiveTypeName)
+          assert(PrimitiveTypeName.BINARY == messageType.getColumns.get(3).getPrimitiveType.getPrimitiveTypeName)
+          assert(PrimitiveTypeName.BINARY == messageType.getColumns.get(4).getPrimitiveType.getPrimitiveTypeName)
+          assert(PrimitiveTypeName.BINARY == messageType.getColumns.get(5).getPrimitiveType.getPrimitiveTypeName)
+          
+          assert(null == messageType.getColumns.get(0).getPrimitiveType.getLogicalTypeAnnotation)
+          assert(null == messageType.getColumns.get(1).getPrimitiveType.getLogicalTypeAnnotation)
+          assert(null == messageType.getColumns.get(2).getPrimitiveType.getLogicalTypeAnnotation)
+          
+          assert(LogicalTypeAnnotation.stringType() == messageType.getColumns.get(3).getPrimitiveType.getLogicalTypeAnnotation)
+          assert(LogicalTypeAnnotation.stringType() == messageType.getColumns.get(4).getPrimitiveType.getLogicalTypeAnnotation)
+          assert(LogicalTypeAnnotation.stringType() == messageType.getColumns.get(5).getPrimitiveType.getLogicalTypeAnnotation)
+          // format: on
         }
       )
 
@@ -160,21 +103,10 @@ class TestS3ParquetOutputPlugin extends EmbulkPluginTestHelper {
       schema,
       data,
       messageTypeTest = { messageType =>
-        assert(
-          PrimitiveTypeName.INT64 == messageType.getColumns
-            .get(0)
-            .getPrimitiveType
-            .getPrimitiveTypeName
-        )
-        assert(
-          LogicalTypeAnnotation.timestampType(
-            true,
-            LogicalTypeAnnotation.TimeUnit.MILLIS
-          ) == messageType.getColumns
-            .get(0)
-            .getPrimitiveType
-            .getLogicalTypeAnnotation
-        )
+        // format: off
+        assert(PrimitiveTypeName.INT64 == messageType.getColumns.get(0).getPrimitiveType.getPrimitiveTypeName)
+        assert(LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.MILLIS) == messageType.getColumns.get(0).getPrimitiveType.getLogicalTypeAnnotation)
+        // format: on
       }
     )
 
@@ -206,31 +138,20 @@ class TestS3ParquetOutputPlugin extends EmbulkPluginTestHelper {
       schema,
       data,
       messageTypeTest = { messageType =>
-        assert(
-          PrimitiveTypeName.INT64 == messageType.getColumns
-            .get(0)
-            .getPrimitiveType
-            .getPrimitiveTypeName
-        )
-        assert(
-          LogicalTypeAnnotation.timestampType(
-            true,
-            LogicalTypeAnnotation.TimeUnit.MICROS
-          ) == messageType.getColumns
-            .get(0)
-            .getPrimitiveType
-            .getLogicalTypeAnnotation
-        )
+        // format: off
+        assert(PrimitiveTypeName.INT64 == messageType.getColumns.get(0).getPrimitiveType.getPrimitiveTypeName)
+        assert(LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.MICROS) == messageType.getColumns.get(0).getPrimitiveType.getLogicalTypeAnnotation)
+        // format: on
       }
     )
 
     assert(data.size == result.size)
     data.indices.foreach { i =>
-      assert {
-        data(i).head.pipe(ts =>
-          (ts.getEpochSecond * 1_000_000L) + (ts.getNano / 1_000L)
-        ) == result(i).head.asInstanceOf[Long]
-      }
+      // format: off
+      assert(
+        data(i).head.pipe(ts => (ts.getEpochSecond * 1_000_000L) + (ts.getNano / 1_000L)) == result(i).head.asInstanceOf[Long]
+      )
+      // format: on
     }
   }
 
@@ -254,31 +175,18 @@ class TestS3ParquetOutputPlugin extends EmbulkPluginTestHelper {
       schema,
       data,
       messageTypeTest = { messageType =>
-        assert(
-          PrimitiveTypeName.INT64 == messageType.getColumns
-            .get(0)
-            .getPrimitiveType
-            .getPrimitiveTypeName
-        )
-        assert(
-          LogicalTypeAnnotation.timestampType(
-            true,
-            LogicalTypeAnnotation.TimeUnit.NANOS
-          ) == messageType.getColumns
-            .get(0)
-            .getPrimitiveType
-            .getLogicalTypeAnnotation
-        )
+        // format: off
+        assert(PrimitiveTypeName.INT64 == messageType.getColumns.get(0).getPrimitiveType.getPrimitiveTypeName)
+        assert(LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.NANOS) == messageType.getColumns.get(0).getPrimitiveType.getLogicalTypeAnnotation)
+        // format: on
       }
     )
 
     assert(data.size == result.size)
     data.indices.foreach { i =>
-      assert {
-        data(i).head.pipe(ts =>
-          (ts.getEpochSecond * 1_000_000_000L) + ts.getNano
-        ) == result(i).head.asInstanceOf[Long]
-      }
+      // format: off
+      assert(data(i).head.pipe(ts => (ts.getEpochSecond * 1_000_000_000L) + ts.getNano) == result(i).head.asInstanceOf[Long])
+      // format: on
     }
   }
 }

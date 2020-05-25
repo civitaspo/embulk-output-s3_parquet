@@ -39,12 +39,12 @@ import org.embulk.plugin.{
   PluginClassLoaderModule
 }
 import org.embulk.spi.{Exec, ExecSession, OutputPlugin, PageTestUtils, Schema}
-import org.msgpack.value.{Value, ValueFactory}
+import org.embulk.spi.json.JsonParser
+import org.msgpack.value.Value
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.BeforeAndAfter
 import org.scalatest.diagrams.Diagrams
 
-import scala.jdk.CollectionConverters._
 import scala.util.Using
 
 object EmbulkPluginTestHelper {
@@ -84,6 +84,8 @@ abstract class EmbulkPluginTestHelper
     extends AnyFunSuite
     with BeforeAndAfter
     with Diagrams {
+  import implicits._
+
   private var exec: ExecSession = _
 
   val TEST_S3_ENDPOINT: String = "http://localhost:4572"
@@ -105,7 +107,7 @@ abstract class EmbulkPluginTestHelper
     withLocalStackS3Client { cli =>
       @scala.annotation.tailrec
       def rmRecursive(listing: ObjectListing): Unit = {
-        listing.getObjectSummaries.asScala.foreach(o =>
+        listing.getObjectSummaries.foreach(o =>
           cli.deleteObject(TEST_BUCKET_NAME, o.getKey)
         )
         if (listing.isTruncated)
@@ -116,49 +118,46 @@ abstract class EmbulkPluginTestHelper
     withLocalStackS3Client(_.deleteBucket(TEST_BUCKET_NAME))
   }
 
+  def execDoWith[A](f: => A): A =
+    try Exec.doWith(exec, () => f)
+    catch {
+      case ex: ExecutionException => throw ex.getCause
+    }
+
   def runOutput(
       outConfig: ConfigSource,
       schema: Schema,
       data: Seq[Seq[Any]],
       messageTypeTest: MessageType => Unit = { _ => }
   ): Seq[Seq[AnyRef]] = {
-    try {
-      Exec.doWith(
-        exec,
-        () => {
-          val plugin =
-            exec.getInjector.getInstance(classOf[S3ParquetOutputPlugin])
-          plugin.transaction(
-            outConfig,
-            schema,
-            1,
-            (taskSource: TaskSource) => {
-              Using.resource(plugin.open(taskSource, schema, 0)) { output =>
-                try {
-                  PageTestUtils
-                    .buildPage(
-                      exec.getBufferAllocator,
-                      schema,
-                      data.flatten: _*
-                    )
-                    .asScala
-                    .foreach(output.add)
-                  output.commit()
-                }
-                catch {
-                  case ex: Throwable =>
-                    output.abort()
-                    throw ex
-                }
-              }
-              Seq.empty.asJava
+    execDoWith {
+      val plugin =
+        exec.getInjector.getInstance(classOf[S3ParquetOutputPlugin])
+      plugin.transaction(
+        outConfig,
+        schema,
+        1,
+        (taskSource: TaskSource) => {
+          Using.resource(plugin.open(taskSource, schema, 0)) { output =>
+            try {
+              PageTestUtils
+                .buildPage(
+                  exec.getBufferAllocator,
+                  schema,
+                  data.flatten: _*
+                )
+                .foreach(output.add)
+              output.commit()
             }
-          )
+            catch {
+              case ex: Throwable =>
+                output.abort()
+                throw ex
+            }
+          }
+          Seq.empty
         }
       )
-    }
-    catch {
-      case ex: ExecutionException => throw ex.getCause
     }
 
     readS3Parquet(TEST_BUCKET_NAME, TEST_PATH_PREFIX, messageTypeTest)
@@ -243,9 +242,8 @@ abstract class EmbulkPluginTestHelper
     ): Seq[Seq[AnyRef]] = {
       val simpleRecord: SimpleRecord = reader.read()
       if (simpleRecord != null) {
-        val r: Seq[AnyRef] = simpleRecord.getValues.asScala
+        val r: Seq[AnyRef] = simpleRecord.getValues
           .map(_.getValue)
-          .toSeq
         return read(reader, records :+ r)
       }
       records
@@ -254,29 +252,8 @@ abstract class EmbulkPluginTestHelper
     finally reader.close()
   }
 
-  def loadConfigSourceFromYamlString(yaml: String): ConfigSource = {
+  def loadConfigSourceFromYamlString(yaml: String): ConfigSource =
     new ConfigLoader(exec.getModelManager).fromYamlString(yaml)
-  }
-
-  def newJson(map: Map[String, Any]): Value = {
-    ValueFactory
-      .newMapBuilder()
-      .putAll(map.map {
-        case (k: String, v: Any) =>
-          val value: Value =
-            v match {
-              case str: String    => ValueFactory.newString(str)
-              case bool: Boolean  => ValueFactory.newBoolean(bool)
-              case long: Long     => ValueFactory.newInteger(long)
-              case int: Int       => ValueFactory.newInteger(int)
-              case double: Double => ValueFactory.newFloat(double)
-              case float: Float   => ValueFactory.newFloat(float)
-              case _              => ValueFactory.newNil()
-            }
-          ValueFactory.newString(k) -> value
-      }.asJava)
-      .build()
-  }
 
   def newDefaultConfig: ConfigSource =
     loadConfigSourceFromYamlString(
@@ -291,4 +268,6 @@ abstract class EmbulkPluginTestHelper
          |default_timezone: Asia/Tokyo
          |""".stripMargin
     )
+
+  def json(str: String): Value = new JsonParser().parse(str)
 }
