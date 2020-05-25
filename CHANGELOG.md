@@ -1,3 +1,17 @@
+0.5.0 (2020-05-25)
+==================
+
+* [New Feature] [#45](https://github.com/civitaspo/embulk-output-s3_parquet/pull/45) Introduce the new usage of **column_options.logical_type**, **type_options.logical_type** to configure more detailed logical types.
+* [Deprecated] [#45](https://github.com/civitaspo/embulk-output-s3_parquet/pull/45) The old usage of **column_options.logical_type**, **type_options.logical_type** is deprecated. Use **column_options.converted_type**, **type_options.converted_type** instead.
+* [New Feature] [#45](https://github.com/civitaspo/embulk-output-s3_parquet/pull/45) Support casting boolean, double, string, timestamp, json to the int logical type.
+* [New Feature] [#45](https://github.com/civitaspo/embulk-output-s3_parquet/pull/45) Support casting long to the timestamp logical type.
+* [New Feature] [#45](https://github.com/civitaspo/embulk-output-s3_parquet/pull/45) Support the decimal logical type. (close [#44](https://github.com/civitaspo/embulk-output-s3_parquet/issues/44))
+* [New Feature] [#45](https://github.com/civitaspo/embulk-output-s3_parquet/pull/45) Support the time logical type.
+* [New Feature] [#45](https://github.com/civitaspo/embulk-output-s3_parquet/pull/45) Support the date logical type.
+* [New Feature] [#45](https://github.com/civitaspo/embulk-output-s3_parquet/pull/45) Support is_adjusted_to_utc = false for the timestamp logical type.
+* [Fix] [#45](https://github.com/civitaspo/embulk-output-s3_parquet/pull/45) Fix the issue 'Logical type int{8,16,32} don't work' (close [#43](https://github.com/civitaspo/embulk-output-s3_parquet/issues/43))
+* [Enhancement] Add lots of tests.
+
 0.4.2 (2020-04-30)
 ==================
 
