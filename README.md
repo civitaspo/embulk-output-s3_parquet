@@ -180,7 +180,3 @@ $ ./gradlew gemPush
 ## ChangeLog
 
 [CHANGELOG.md](./CHANGELOG.md)
-
-## Contributors
-
-- [@syucream](https://github.com/syucream)
