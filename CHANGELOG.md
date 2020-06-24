@@ -1,3 +1,8 @@
+0.5.1 (2020-06-24)
+==================
+
+* [Fix] [#47](https://github.com/civitaspo/embulk-output-s3_parquet/pull/47) Use lower case without any space for Glue data type.
+
 0.5.0 (2020-05-25)
 ==================
 
