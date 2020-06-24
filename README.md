@@ -142,7 +142,7 @@ out:
 
 ## Note
 
-* The current Parquet [LogicalTypes](https://github.com/apache/parquet-format/blob/apache-parquet-format-2.8.0/LogicalTypes.md) implementation does only old representation.
+* This plugin implements the Parquet [LogicalTypes](https://github.com/apache/parquet-format/blob/apache-parquet-format-2.8.0/LogicalTypes.md) as much as possible. But it does not implement all of ones.
 * Some kind of LogicalTypes are sometimes not supported on your middleware. Be careful to giving logical type name.
 
 ## Development
