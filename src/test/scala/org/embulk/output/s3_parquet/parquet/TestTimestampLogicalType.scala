@@ -128,7 +128,12 @@ class TestTimestampLogicalType
               ).consumeTimestamp(consumer, v, null)
             }
             assert(consumer.data.head.head.isInstanceOf[Long])
-            assert(consumer.data.head.head == Int.MaxValue)
+            if (timeZone.getId == "Asia/Tokyo" && !isAdjustedToUtc)
+              assert(consumer.data.head.head == 2179883647L)
+            else // UTC
+              assert(
+                consumer.data.head.head == 2147483647L
+              )
           }
         case MICROS =>
           val v = Timestamp.ofEpochMilli(Int.MaxValue)
@@ -141,8 +146,12 @@ class TestTimestampLogicalType
               ).consumeTimestamp(consumer, v, null)
             }
             assert(consumer.data.head.head.isInstanceOf[Long])
-
-            assert(consumer.data.head.head == Int.MaxValue * 1_000L)
+            if (timeZone.getId == "Asia/Tokyo" && !isAdjustedToUtc)
+              assert(consumer.data.head.head == 2179883647000L)
+            else // UTC
+              assert(
+                consumer.data.head.head == 2147483647000L
+              )
           }
         case NANOS =>
           val v = Timestamp.ofEpochMilli(Int.MaxValue)
@@ -155,7 +164,12 @@ class TestTimestampLogicalType
               ).consumeTimestamp(consumer, v, null)
             }
             assert(consumer.data.head.head.isInstanceOf[Long])
-            assert(consumer.data.head.head == Int.MaxValue * 1_000_000L)
+            if (timeZone.getId == "Asia/Tokyo" && !isAdjustedToUtc)
+              assert(consumer.data.head.head == 2179883647000000L)
+            else // UTC
+              assert(
+                consumer.data.head.head == 2147483647000000L
+              )
           }
       }
 

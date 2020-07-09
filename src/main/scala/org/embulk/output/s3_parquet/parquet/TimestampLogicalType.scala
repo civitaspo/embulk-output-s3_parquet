@@ -1,6 +1,7 @@
 package org.embulk.output.s3_parquet.parquet
 
-import java.time.ZoneId
+import java.time.{OffsetTime, ZoneId}
+import java.time.temporal.ChronoField.OFFSET_SECONDS
 
 import org.apache.parquet.io.api.RecordConsumer
 import org.apache.parquet.schema.{LogicalTypeAnnotation, PrimitiveType, Types}
@@ -33,6 +34,7 @@ case class TimestampLogicalType(
 ) extends ParquetColumnType {
   private val logger: Logger =
     LoggerFactory.getLogger(classOf[TimestampLogicalType])
+  private val UTC: ZoneId = ZoneId.of("UTC")
 
   override def primitiveType(column: Column): PrimitiveType =
     column.getType match {
@@ -73,12 +75,25 @@ case class TimestampLogicalType(
       consumer: RecordConsumer,
       v: Timestamp,
       formatter: TimestampFormatter
-  ): Unit = timeUnit match {
-    case MILLIS => consumer.addLong(v.toEpochMilli)
-    case MICROS =>
-      consumer.addLong(v.getEpochSecond * 1_000_000L + (v.getNano / 1_000L))
-    case NANOS =>
-      consumer.addLong(v.getEpochSecond * 1_000_000_000L + v.getNano)
+  ): Unit = {
+    val zoneId = if (isAdjustedToUtc) UTC else timeZone
+    val offsetTime: OffsetTime = OffsetTime.ofInstant(v.getInstant, zoneId)
+    timeUnit match {
+      case MILLIS =>
+        consumer.addLong(
+          v.toEpochMilli + offsetTime.getLong(OFFSET_SECONDS) * 1_000L
+        )
+      case MICROS =>
+        consumer.addLong(
+          (v.getEpochSecond + offsetTime
+            .getLong(OFFSET_SECONDS)) * 1_000_000L + (v.getNano / 1_000L)
+        )
+      case NANOS =>
+        consumer.addLong(
+          (v.getEpochSecond + offsetTime
+            .getLong(OFFSET_SECONDS)) * 1_000_000_000L + v.getNano
+        )
+    }
   }
 
   override def consumeJson(consumer: RecordConsumer, v: Value): Unit =
