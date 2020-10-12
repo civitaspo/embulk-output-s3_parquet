@@ -88,7 +88,7 @@ abstract class EmbulkPluginTestHelper
 
   private var exec: ExecSession = _
 
-  val TEST_S3_ENDPOINT: String = "http://localhost:4572"
+  val TEST_S3_ENDPOINT: String = "http://localhost:4566"
   val TEST_S3_REGION: String = "us-east-1"
   val TEST_S3_ACCESS_KEY_ID: String = "test"
   val TEST_S3_SECRET_ACCESS_KEY: String = "test"
