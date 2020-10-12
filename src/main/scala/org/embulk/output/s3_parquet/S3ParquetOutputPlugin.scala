@@ -47,7 +47,9 @@ class S3ParquetOutputPlugin extends OutputPlugin {
         defaultGlueTypes =
           support.parquetSchema.transform((k, v) => v.glueDataType(k))
       )
-      cr.run()
+      ContextClassLoaderSwapper.usingPluginClass {
+        cr.run()
+      }
     }
 
     Exec.newConfigDiff
