@@ -13,7 +13,7 @@ jobs:
       localstack:
         image: localstack/localstack
         ports:
-          - 4572:4572
+          - 4566:4566
         env:
           SERVICES: s3
 
