@@ -1,3 +1,8 @@
+0.5.2 (2020-10-12)
+==================
+
+* [Fix] [#51](https://github.com/civitaspo/embulk-output-s3_parquet/pull/51) Use PluginClassLoader when oparating catalog.
+
 0.5.1 (2020-06-24)
 ==================
 
