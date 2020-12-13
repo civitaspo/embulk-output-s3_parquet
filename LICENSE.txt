@@ -1,3 +1,4 @@
+Copyright (c) 2019 Takahiro Nakayama
 
 MIT License
 
