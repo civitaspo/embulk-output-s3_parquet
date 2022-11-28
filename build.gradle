@@ -53,7 +53,8 @@ dependencies {
     }
     testImplementation "org.embulk:embulk-core:0.9.23:tests"
     testImplementation "org.scalatest:scalatest_2.13:3.1.1"
-    testImplementation 'org.apache.parquet:parquet-tools:1.11.0'
+    testImplementation 'org.apache.parquet:parquet-avro:1.11.0'
+    testImplementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-avro:2.14.0'
     testImplementation 'org.apache.hadoop:hadoop-client:2.9.2'
 }
 
