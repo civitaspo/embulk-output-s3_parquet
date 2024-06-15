@@ -11,7 +11,7 @@ repositories {
 }
 
 group = "pro.civitaspo"
-version = "0.5.2"
+version = "0.5.3"
 description = "Dumps records to S3 Parquet."
 
 sourceCompatibility = 1.8
@@ -39,7 +39,7 @@ dependencies {
     compile('org.apache.parquet:parquet-format:2.7.0') {
         exclude group: 'org.slf4j', module: 'slf4j-api'
     }
-    compile('org.apache.hadoop:hadoop-common:2.9.2') {
+    compile('org.apache.hadoop:hadoop-common:2.10.2') {
         exclude group: 'org.slf4j', module: 'slf4j-api'
         exclude group: 'com.google.guava', module: 'guava'
         exclude group: 'commons-beanutils', module: 'commons-beanutils-core'
@@ -55,7 +55,7 @@ dependencies {
     testImplementation "org.scalatest:scalatest_2.13:3.1.1"
     testImplementation 'org.apache.parquet:parquet-avro:1.11.0'
     testImplementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-avro:2.14.0'
-    testImplementation 'org.apache.hadoop:hadoop-client:2.9.2'
+    testImplementation 'org.apache.hadoop:hadoop-client:2.10.2'
 }
 
 spotless {
