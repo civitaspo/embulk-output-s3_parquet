@@ -237,9 +237,11 @@ abstract class EmbulkPluginTestHelper
       )
       .build()
 
-    Iterator.continually(reader.read()).takeWhile(_ != null).map(
-      record => record.getSchema.getFields.map(f => record.get(f.name()))
-    ).toSeq
+    Iterator
+      .continually(reader.read())
+      .takeWhile(_ != null)
+      .map(record => record.getSchema.getFields.map(f => record.get(f.name())))
+      .toSeq
   }
 
   def loadConfigSourceFromYamlString(yaml: String): ConfigSource =
