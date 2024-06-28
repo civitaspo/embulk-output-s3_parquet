@@ -1,3 +1,10 @@
+0.5.3 (2024-06-28)
+==================
+
+* [Enhancement] [#55](https://github.com/civitaspo/embulk-output-s3_parquet/pull/55) Replace parquet-tools with parquet-avro
+* [Enhancement] [#57](https://github.com/civitaspo/embulk-output-s3_parquet/pull/57) Upgrade hadoop-common library to resolve CVE-2021-37404
+
+
 0.5.2 (2020-10-12)
 ==================
 
